@@ -83,6 +83,7 @@ Setting temporary charge threshold(s) for battery BATA:
 $ sudo tlp setcharge 0 80 -- ${xinc} X_THRESH_SIMULATE_STOP="100" 2>&1 | sed -r "s/${bata}/BATA/"
 Setting temporary charge threshold(s) for battery BATA:
   stop  =  80
+$ [ -n "${xinc}" ] && [ -n "$VWRITE_SLEEP" ] && sleep "$VWRITE_SLEEP" # workaround: mitigate void writes (in simulation)
 $ sudo tlp setcharge DEF DEF -- ${xinc} 2>&1 | sed -r "s/${bata}/BATA/"
 Setting temporary charge threshold(s) for battery BATA:
   stop  = 100
