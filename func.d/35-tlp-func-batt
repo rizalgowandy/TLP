@@ -305,6 +305,39 @@ bat_bool2bct () {
     return 0
 }
 
+soc_calc () {
+    # calc and print battery charge level (rounded)
+    # generic implementation
+    # $1: format (optional)
+    # global param: $_bd_read
+    # prerequisite: batdrv_init(), batdrv_select_battery()
+    # rc: 0=ok/1=charge level read error
+    local ef en
+
+    # shellcheck disable=SC2154
+    if [ -f "$_bd_read/energy_full" ]; then
+        ef=$(read_sysval "$_bd_read/energy_full")
+        en=$(read_sysval "$_bd_read/energy_now")
+    elif [ -f "$_bd_read/charge_full" ]; then
+        ef=$(read_sysval "$_bd_read/charge_full")
+        en=$(read_sysval "$_bd_read/charge_now")
+    else
+        ef=0
+        en=0
+    fi
+
+    if [ "$ef" != "0" ]; then
+        if [ -n "$1" ]; then
+            perl -e 'printf ("'"$1"'", 100.0 * '"$en"' / '"$ef"')'
+        else
+            perl -e 'printf ("%d", int(100.0 * '"$en"' / '"$ef"' + 0.5))'
+        fi
+        return 0
+    else
+        printf "255"
+        return 1
+    fi
+}
 
 soc_gt_stop_notice () {
     # output notice to discharge on battery power if SOC is above stop threshold
@@ -316,7 +349,7 @@ soc_gt_stop_notice () {
 
     # shellcheck disable=SC2154
     if batdrv_check_soc_gt_stop; then
-        echo_message "Notice: $_bat_str charge level is above the stop threshold. Use your laptop"`
+        echo_message "Notice: $_bat_str charge is above the stop threshold. Run your laptop"`
             `" on battery power until the battery is discharged to the stop threshold."
     fi
 
@@ -337,7 +370,7 @@ soc_gt_stop_recommendation () {
     for bat in $_batteries; do # iterate detected batteries
         batdrv_select_battery "$bat"
         if batdrv_check_soc_gt_stop; then
-            printf "%s charge level is above the stop threshold. Use your laptop on battery power"`
+            printf "%s charge is above the stop threshold. Run your laptop on battery power"`
                 `" until the battery is discharged to the stop threshold.\n" "$bat"
         fi
     done
