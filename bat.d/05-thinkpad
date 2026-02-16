@@ -38,47 +38,36 @@ check_thinkpad () {
     # check for ThinkPad hardware and save model string
     # rc: 0=ThinkPad, 1=other hardware
     # retval: $_tpmodel
-    local pv
+    local pn pv
 
     _tpmodel=""
+    # sanitize DMI product_version string
+    pv="$(read_dmi product_version | tr -C -d 'a-zA-Z0-9 ')"
 
+    # check if kernel module thinkpad_acpi is loaded
     if [ -d "$TPACPID" ]; then
-        # kernel module thinkpad_acpi is loaded
-
-        if [ -z "$X_SIMULATE_MODEL" ]; then
-            # get DMI product_version string and sanitize it
-            pv="$(read_dmi product_version | tr -C -d 'a-zA-Z0-9 ')"
-        else
+        # it's a ThinkPad, determine model
+        if [ -n "$X_SIMULATE_MODEL" ]; then
             # simulate arbitrary model
-            pv="$X_SIMULATE_MODEL"
-        fi
-
-        # stock BIOS: check DMI product_version string for occurrence of "ThinkPad"
-        if printf '%s' "$pv" | grep -E -q 'Think[Pp]ad'; then
-            # it's a real ThinkPad --> save model substring
-            _tpmodel=$(printf '%s\n' "$pv" | sed -r 's/^Think[Pp]ad //')
-        elif [ -z "$X_SIMULATE_MODEL" ]; then
-            # coreboot happens to use DMI product_name, check it too
-            pv="$(read_dmi product_name | tr -C -d 'a-zA-Z0-9 ')"
+            _tpmodel="$X_SIMULATE_MODEL"
+        else
+            # stock BIOS: strip "ThinkPad" from DMI product_version
             if printf '%s' "$pv" | grep -E -q 'Think[Pp]ad'; then
-                # it's a librebooted' ThinkPad --> save model substring
+                # stock BIOS --> save model substring
                 _tpmodel=$(printf '%s\n' "$pv" | sed -r 's/^Think[Pp]ad //')
+            else
+                # coreboot happens to use DMI product_name instead of model code
+                _tpmodel="$(read_dmi product_name | tr -C -d 'a-zA-Z0-9 ')"
             fi
         fi
-    else
-        # not a ThinkPad: get DMI product string
-        pv="$(read_dmi product_version)"
-    fi
-
-    if [ -n "$_tpmodel" ]; then
-        # ThinkPad
-        echo_debug "bat" "check_thinkpad: tpmodel=$_tpmodel"
-        return 0
     else
         # not a ThinkPad
         echo_debug "bat" "check_thinkpad.not_a_thinkpad: model=$pv"
         return 1
     fi
+
+    echo_debug "bat" "check_thinkpad: tpmodel=$_tpmodel"
+    return 0
 }
 
 is_coreboot () {
