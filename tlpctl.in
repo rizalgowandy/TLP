@@ -406,11 +406,15 @@ def main():
     parser = get_parser()
     args, unknown = parser.parse_known_args()
 
-    if args.version:
-        _version(args)
-    elif not args.command:
-        # Default behavior is to print a brief profile list if no command is given
-        list_profiles_brief()
+    if not args.command:
+        # No command given
+        if args.version:
+            # --version
+            _version(args)
+        else:
+            # Print a brief profile list
+            list_profiles_brief()
+
     else:
         if check_unknown_args(sys.argv[1:], unknown, args.command):
             args.arguments += unknown
