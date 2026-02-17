@@ -15,9 +15,12 @@ please refer to: https://linrunner.de/tlp/developers/packaging.html
       firmware from MrChromebox.tech): start and stop threshold (Issue #838)
     - LG Gram laptops: remove support for kernels < 5.18 (lg-legacy plugin).
       Note: the lg plugin for kernel 5.18 and newer remains included.
+    - RESTORE_THRESHOLDS_ON_BAT: change default to enabled.
+      If the charger is disconnected, for instance after a 'tlp fullcharge',
+      then the configured charge thresholds will be automatically restored.
     - tlp-stat -b: on laptops that provide battery metrics in mA(h), calculate
       the equivalent in mW(h) and display it adjacently
-    - tlp-stat -b -v: show serial number
+    - tlp-stat -b -v: show battery serial number
     General:
     - Remove backward compatibility with /etc/default/tlp
     - tlp-stat -s:
