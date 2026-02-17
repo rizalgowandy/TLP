@@ -11,7 +11,7 @@
 # 2. /etc/tlp.d/*.conf - Drop-in customization snippets
 # 3. /etc/tlp.conf     - User configuration (this file)
 #
-# Power Profiles: a part of TLP's parameters is divided into two or three
+# TLP profiles: a part of TLP's parameters is divided into two or three
 # groups:
 # - performance: parameters ending in _AC are used when AC power is
 #   connected or when the command 'tlp performance' is run.
@@ -20,7 +20,7 @@
 # - power-saver: parameters ending in _SAV are used when the command
 #   'tlp power-saver' is run. If there is no _SAV parameter available
 #   for a feature, the _BAT parameter will be used instead.
-# - Any remaining parameters not divided apply to all power profiles.
+# - Any remaining parameters not divided apply to all TLP profiles.
 #
 # Please note:
 # - If parameters are specified more than once, the last occurrence takes
@@ -31,7 +31,7 @@
 # - Important: all parameters are disabled here. Remove the leading '#' if you
 #   want to enable a feature without a default or if you want to set a value
 #   other than the default.
-# - Parameters must always be specified for all power profiles, i.e. in the
+# - Parameters must always be specified for all TLP profiles, i.e. in the
 #   AC, BAT and SAV category (where applicable). If you omit one of them,
 #   the missing profile will receive its value from another profile, since
 #   a change will only occur if different values are defined.
@@ -81,7 +81,7 @@
 
 #TLP_MSG_COLORS="91 93 1 92"
 
-# Control automatic switching of the power profile when connecting or removing
+# Control automatic switching of the TLP profile when connecting or removing
 # the charger, when booting the system or when executing 'tlp start':
 #   0=disabled - never switch, use TLP_DEFAULT_MODE if configured
 #   1=auto  - always switch, select performance on AC and
@@ -94,7 +94,7 @@
 
 #TLP_AUTO_SWITCH=2
 
-# Power profile to use when automatic switching is disabled
+# TLP profile to use when automatic switching is disabled
 # (TLP_AUTO_SWITCH=0), profile is locked (TLP_PERSISTENT_DEFAULT=1)
 # or no power supply is detected:
 #   PRF=performance, BAL=balanced, SAV=power-saver.
@@ -104,14 +104,14 @@
 
 #TLP_DEFAULT_MODE=BAL
 
-# Lock power profile:
+# Lock TLP profile:
 #   0=profile depends on automatic switching,
 #   1=profile is locked to TLP_DEFAULT_MODE (TLP_AUTO_SWITCH is ignored).
 # Default: 0
 
 #TLP_PERSISTENT_DEFAULT=0
 
-# Power supply classes to ignore when determining power profile:
+# Power supply classes to ignore when determining TLP profile:
 #  AC, USB, BAT.
 # Separate multiple classes with spaces.
 # Note: try on laptops where operation mode AC/BAT is incorrectly detected.
