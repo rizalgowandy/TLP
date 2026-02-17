@@ -402,9 +402,6 @@ if [ "$show_system" = "1" ] || [ "$show_all" = "1" ] ; then
         "$PS_BAT")     printf "Power source   = battery\n" ;;
         "$PS_UNKNOWN") printf "Power source   = unknown\n" ;;
     esac
-    if check_ac_quirk "$model"; then
-        echo "Notice: system may not detect AC/charger -- see: https://linrunner.de/faq/operation.html#faq-ac-quirk"
-    fi
     echo
 
     # -- check systemd services
