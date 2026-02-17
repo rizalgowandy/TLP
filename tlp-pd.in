@@ -467,7 +467,8 @@ class ProfilesDaemon:
 
             # Check authorization
             if not self._check_polkit_auth(sender, f"{BUS_NAME}.switch-profile"):
-                raise GLib.Error(f"{_logtag}: Not authorized to switch power profile")
+                self._logger.error(f"{_logtag}: Not authorized to switch power profile")
+                return False
 
             # User (manually) changes profile
             self._drop_all_holds()
@@ -480,9 +481,10 @@ class ProfilesDaemon:
             if not self._check_polkit_auth(
                 sender, f"{BUS_NAME}.configure-battery-aware"
             ):
-                raise GLib.Error(
+                self._logger.error(
                     f"{_logtag}: Not authorized to configure battery aware"
                 )
+                return False
 
             self._battery_aware = value.get_boolean()
             self._signal_properties_changed({property_name: value}, [])
@@ -490,7 +492,8 @@ class ProfilesDaemon:
         elif property_name == "LogLevel":
             # Check authorization
             if not self._check_polkit_auth(sender, f"{BUS_NAME}.set-loglevel"):
-                raise GLib.Error(f"{_logtag}: Not authorized to set loglevel")
+                self._logger.error(f"{_logtag}: Not authorized to set loglevel")
+                return False
 
             loglevel = _sanitize_input(value.get_string())
             if loglevel == "debug":
@@ -638,8 +641,8 @@ class ProfilesDaemon:
             )
 
             # Extract is_authorized from result
-            is_authorized = result.unpack()[0]
-            self._logger.debug(f"{_logtag}: {is_authorized}")
+            is_authorized = result.unpack()[0][0]
+            self._logger.debug(f"{_logtag}: {is_authorized} {result}")
             return bool(is_authorized)
 
         except GLib.Error as e:
