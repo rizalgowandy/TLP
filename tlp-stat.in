@@ -294,22 +294,9 @@ fi # show_mode
 
 # --- show system info and status
 if [ "$show_system" = "1" ] || [ "$show_all" = "1" ] ; then
-    if [ -z "$X_SIMULATE_MODEL" ]; then
-        product_version="$(read_dmi product_version)"
-        product_name="$(read_dmi product_name)"
-        if printf '%s' "$product_name" | grep -E -q 'Think[Pp]ad'; then
-            model="$product_name"
-        else
-            model="$product_version $product_name"
-        fi
-    else
-        # simulate arbitrary model
-        model="$X_SIMULATE_MODEL"
-    fi
-
     echo "+++ System Info"
-    vendor="$(read_dmi sys_vendor)" && printf "System         = %s\n" "$vendor $model"
-    bios="$(read_dmi bios_version) $(read_dmi bios_vendor)" && printf "BIOS           = %s\n" "$bios"
+    printf "System         = %s\n" "$(read_dmi sys_vendor) $(read_dmi product_version) $(read_dmi product_name)"
+    printf "BIOS           = %s\n" "$(read_dmi bios_vendor) $(read_dmi bios_version)"
     ecfw="$(read_dmi ec_firmware_release)" && printf "EC firmware    = %s\n" "$ecfw"
 
     # --- release & kernel info
