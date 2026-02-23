@@ -394,7 +394,7 @@
 # AMD GPU power management.
 # Performance level (DPM): high, auto, low; auto is recommended.
 # Note: requires amdgpu or radeon driver.
-# Default: auto
+# Default: auto (AC), auto (BAT), low (SAV)
 
 #RADEON_DPM_PERF_LEVEL_ON_AC=auto
 #RADEON_DPM_PERF_LEVEL_ON_BAT=auto
