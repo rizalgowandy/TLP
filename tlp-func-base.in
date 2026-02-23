@@ -75,11 +75,8 @@ readonly PP_PRF=0
 readonly PP_BAL=1
 readonly PP_SAV=2
 readonly PP_SUS=3
-readonly PP_VALID="0 1 2"
-
-# default/manual/persistent mode exceptional cases
-readonly MPM_UNKNOWN=128
-readonly MPM_OFF=255
+readonly PP_NONE=255
+readonly PP_USER="0 1 2"
 
 # ----------------------------------------------------------------------------
 # Control
@@ -864,7 +861,7 @@ is_laptop () { # check if machine is a laptop
 get_sys_power_supply () {
     # determine active power supply
     # $1: tlp command
-    # rc: PS_AC=0/PS_BAT=/PS_UNKNOWN=128
+    # rc: PS_AC=0/PS_BAT=1/PS_UNKNOWN=128
     # retval: $_syspwr == rc
     #         $_psdev: 1st power supply (sysfs path) found (for udev rule check)
     #
@@ -1026,45 +1023,30 @@ check_ac_power () { # check if ac power connected -- $1: function
     return 0
 }
 
-# --- Default, Persistent and Manual Profiles
+# --- Power Profiles
 
-get_default_mode () { # get default and persistent power profile
-    # retval: $_default_mode, $_persist_mode (PP_PRF=0, PP_BAL=1, PP_SAV=2, MPM_OFF=255)
+id2pp () { # convert power profile id to code
+    # $1: id: PRF/AC/BAL/BAT/SAV
 
-    _default_mode=$MPM_OFF
-    _persist_mode=$MPM_OFF
-
-    if [ "$TLP_AUTO_SWITCH" = "0" ]; then
-        # auto switching disabled, return default profile
-        case "$(toupper "$TLP_DEFAULT_MODE")" in
-            PRF|AC)  _default_mode="$PP_PRF" ;;
-            BAL|BAT) _default_mode="$PP_BAL" ;;
-            SAV)     _default_mode="$PP_SAV" ;;
-        esac
-    fi
-
-    if [ "$TLP_PERSISTENT_DEFAULT" = "1" ]; then
-        # persistent profile
-        case "$(toupper "$TLP_DEFAULT_MODE")" in
-            PRF|AC)  _persist_mode="$PP_PRF" ;;
-            BAL|BAT) _persist_mode="$PP_BAL" ;;
-            SAV)     _persist_mode="$PP_SAV" ;;
-        esac
-    fi
+    case "$(toupper "$1")" in
+        PRF|AC)  printf "%s" "$PP_PRF"  ;;
+        BAL|BAT) printf "%s" "$PP_BAL"  ;;
+        SAV)     printf "%s" "$PP_SAV"  ;;
+        *)       printf "%s" "$PP_NONE" ;;
+    esac
 }
 
 set_manual_mode () { # set manual profile
-    # $1: profile: PP_PRF=0/PP_BAL=1/PP_SAV=2
-    # retval: $_manual_mode (PP_PRF=0, PP_BAL=1, PP_SAV=2)
+    # $1: profile code: PP_PRF=0/PP_BAL=1/PP_SAV=2
+    # rc: 0=ok/1=error
 
-    if ! wordinlist "$1" "$PP_PRF $PP_BAL $PP_SAV"; then
+    if ! wordinlist "$1" "$PP_USER"; then
         echo_debug "ps" "set_manual_mode($1).invalid"
         return 1
     fi
 
     create_rundir
     if write_sysf "$1" $MANUALMODEFILE; then
-        _manual_mode="$1"
         echo_debug "ps" "set_manual_mode($1).ok"
         return 0
     else
@@ -1074,43 +1056,39 @@ set_manual_mode () { # set manual profile
 }
 
 clear_manual_mode () { # remove manual profile
-    # retval: $_manual_mode (none)
 
     rm -f $MANUALMODEFILE 2> /dev/null
-    _manual_mode="$MPM_OFF"
 
     echo_debug "ps" "clear_manual_mode"
     return 0
 }
 
-get_manual_mode () { # get manual profile
+get_manual_mode () {
+    # print saved manual profile code: PP_PRF=0/PP_BAL=1/PP_SAV=2/PP_NONE=255
     # rc: 0=active/1=inactive
-    # retval: $_manual_mode (PP_PRF=0, PP_BAL=1, PP_SAV=2, MPM_OFF=255
     local rc=1
-    _manual_mode="$MPM_OFF"
+    local man_pp="$PP_NONE"
 
-    if [ -f $MANUALMODEFILE ]; then
+    if [ -f "$MANUALMODEFILE" ]; then
         # read mode file
-        if _manual_mode=$(read_sysf $MANUALMODEFILE); then
-            case $_manual_mode in
-                "$PP_PRF"|"$PP_BAL"|"$PP_SAV") rc=0 ;;
-                *) _manual_mode=$MPM_UNKNOWN ;;
-            esac
+        if man_pp="$(read_sysf "$MANUALMODEFILE")"; then
+            if wordinlist "$man_pp" "$PP_USER"; then
+                printf "%s" "$man_pp"
+                rc=0
+            fi
         else
             # cannot read mode file - possible cause:
             #   tlp-stat -s is running without root privilege and the file is not world readable
             #   because tlp ac/bat is run with sudo when creating the file and thereby a
             #   restrictive umask applies; see https://github.com/linrunner/TLP/issues/702
             # -> manual mode is active but operation mode cannot be determined
-            _manual_mode=$MPM_UNKNOWN
+            printf "%s" "$PP_NONE"
             rc=0
         fi
     fi
 
     return $rc
 }
-
-# --- Power Profiles
 
 pp2str () { # convert power profile code to string
     # $1: profile: PP_PRF=0/PP_BAL=1/PP_SAV=2
@@ -1142,7 +1120,7 @@ read_saved_power_profile () {
     # read last saved profile and power source from statefile
     if [ ! -f $PWRRUNFILE ]; then
         # file non-existent
-        _pp_last="$PS_UNKNOWN"
+        _pp_last="$PP_NONE"
         _ps_last="$PS_UNKNOWN"
     else
         read -r _pp_last _ps_last < $PWRRUNFILE 2> /dev/null
@@ -1150,17 +1128,17 @@ read_saved_power_profile () {
 
     # intercept invalid saved states
     case "$_pp_last" in
-        "$PP_PRF"|"$PP_BAL"|"$PP_SAV"|"$PS_UNKNOWN")
+        "$PP_PRF"|"$PP_BAL"|"$PP_SAV")
             ;;
 
         "") # nothing
             echo_debug "ps" "read_saved_power_profile.no_pp"
-            _pp_last="$PS_UNKNOWN"
+            _pp_last="$PP_NONE"
             ;;
 
         *) # invalid
             echo_debug "ps" "read_saved_power_profile.invalid_pp: saved=$_pp_last"
-            _pp_last="$PS_UNKNOWN"
+            _pp_last="$PP_NONE"
             ;;
     esac
 
@@ -1182,92 +1160,179 @@ read_saved_power_profile () {
     return 0
 }
 
+assigned_profile () { # print profile code assigned to the given or current power source
+    # global param: $_syspwr
+    # $1: power source: PS_AC=0/PS_BAT=1/PS_UNKNOWN=128
+    # rc: PP_PRF=0/PP_BAL=1/PP_SAV=2
+    # retval: $_pp_def_mem: PP_PRF=0/PP_BAL=1/PP_SAV=2
+
+    local ps="${1:-$_syspwr}"
+    local ap
+
+    case "$ps" in
+        "$PS_AC")
+            ap="$(id2pp "$TLP_PROFILE_AC")"
+            if [ "$ap" = "$PP_NONE" ]; then
+                # messed config --> substitute default or performance profile
+                ap="$(id2pp "${TLP_DEFAULT_MODE:-PRF}")"
+            fi
+            ;;
+
+        "$PS_BAT")
+            ap="$(id2pp "$TLP_PROFILE_BAT")"
+            if [ "$ap" = "$PP_NONE" ]; then
+                # messed config --> substitute default or balanced profile
+                ap="$(id2pp "${TLP_DEFAULT_MODE:-BAL}")"
+            fi
+            ;;
+
+        *) # unknown power source --> substitute default profile
+            ap="$(id2pp "$TLP_DEFAULT_MODE")"
+            if [ "$ap" = "$PP_NONE" ]; then
+                # no default profile --> check machine type
+                if is_laptop; then
+                    # laptop: use battery profile
+                    ap="$(id2pp "$TLP_PROFILE_BAT")"
+                    # messed config --> substitute balanced profile
+                    ap="${ap:-$PP_BAL}"
+                else
+                    # desktop/other: use AC profile
+                    ap="$(id2pp "$TLP_PROFILE_AC")"
+                    # messed config --> substitute performance profile
+                    ap="${ap:-$PP_PRF}"
+                fi
+            else
+                _pp_def_mem="$ap"
+            fi
+            ;;
+    esac
+
+    printf "%s" "$ap"
+    echo_debug "ps" "assigned_profile($1): ps=$ps; ap=$ap"
+    return "$ap"
+}
+
 get_next_power_profile () {
     # determine next power profile: either
     # - depending on the tlp command,
     # - actual power source or
     # - default/persistence setting
     # $1: tlp command
-    # retval: $_pp_next, $_pp_last (PP_PRF=0, PP_BAL=1, PP_SAV=2),
-    #         $_default_mode, $persist_mode (PP_PRF=0, PP_BAL=1, PP_SAV=2, MPM_OFF=255)
+    # retval: $_pp_next, $_pp_last, $_pp_def_mem: PP_PRF=0/PP_BAL=1/PP_SAV=2
     # rc: same as $_pp_next
     # like get_sys_power_supply(), plus:
+    #### TODO: update
     # - maps unknown power source to TLP_DEFAULT_MODE
     # - returns manual or persistent mode if applicable and not 'tlp start'
     # - if TLP_DEFAULT_MODE is unconfigured and power source is unknown,
     #   returns PP_BAL for laptop / PP_PRF for desktop/other
 
-    local neutral tlp_cmd
-
-    tlp_cmd="$1"
-    neutral=0
-
-    read_saved_power_profile
-
     # determine current power supply
     get_sys_power_supply "$tlp_cmd"
-    get_manual_mode
-    get_default_mode
-    _pp_next="$PS_UNKNOWN"
 
     # determine next power profile based on command
-    if [ "$_persist_mode" != "$MPM_OFF" ]; then
-        # persistent mode
-        _pp_next=$_persist_mode
+    read_saved_power_profile
+    local tlp_cmd="$1"
+    local neutral=0
+    # shellcheck disable=SC2155
+    local def_pp="$(id2pp "$TLP_DEFAULT_MODE")"
+    local man_pp=""
+    local pers=0
+    _pp_next="$PP_NONE"
+    _pp_def_mem="$PP_NONE"
+
+    if [ "$TLP_PERSISTENT_DEFAULT" = "1" ]; then
+        # persistent profile
+        pers=1
+        _pp_next="$def_pp"
+        _pp_def_mem="$def_pp"
     else
         # non-persistent mode
         case "$tlp_cmd" in
             init|start)
-                if [ "$_default_mode" != "$MPM_OFF" ]; then
-                    # use default profile
-                    _pp_next="$_default_mode"
-                else
-                    # use profile for power source
-                    _pp_next=$_syspwr
-                fi
+                case "$TLP_AUTO_SWITCH" in
+                    0) # switching disabled --> default profile
+                        _pp_next="$def_pp"
+                        _pp_def_mem="$def_pp"
+                        ;;
+
+                    1|2) # auto and smart switching --> assigned profile
+                        _pp_next="$(assigned_profile)"
+                        ;;
+                esac
                 clear_manual_mode
                 ;;
 
             auto|resume)
-                if wordinlist "$_manual_mode" "$PP_VALID"; then
-                    # use manual mode
-                    _pp_next=$_manual_mode
+                if man_pp="$(get_manual_mode)"; then
+                    # manual profile
+                    _pp_next="$man_pp"
                 else
-                    if     { [ "$TLP_AUTO_SWITCH" = "0" ] && [ "$_pp_last" != "$PS_UNKNOWN" ]; } \
-                        || { [ "$TLP_AUTO_SWITCH" = "1" ] && [ "$_syspwr" = "$_ps_last" ]; } \
-                        || { [ "$TLP_AUTO_SWITCH" = "2" ] && [ "$_pp_last" != "$_ps_last" ]; }; then
-                        # 1. switching disabled AND last profile is known
-                        #  OR
-                        # 2. auto switching AND power source did not change
-                        #    (ignores meaningless power_supply events triggered by unplugging USB-C (disk) devices)
-                        #  OR
-                        # 3. smart switching AND non-standard profile selected (by user)
-                        # --> keep profile
-                        _pp_next=$_pp_last
-                    else
-                        # 3. (plain old) auto switching
-                        #  OR
-                        # 4. last profile is unknown
-                        # --> set next profile according to default or current power source
-                        if [ "$_default_mode" != "$MPM_OFF" ]; then
-                            # use default profile
-                            _pp_next="$_default_mode"
-                        else
-                            # use profile for power source
-                            _pp_next=$_syspwr
-                        fi
-                    fi
-                fi
+                    case "$TLP_AUTO_SWITCH" in
+                        0) # switching disabled --> keep profile
+                            _pp_next=$_pp_last
+                            ;;
+
+                        1) # auto switching
+                            if [ "$_syspwr" = "$PS_UNKNOWN" ]; then
+                                # power source unknown --> default profile
+                                _pp_next="$(assigned_profile)"
+                            elif  [ "$_syspwr" != "$_ps_last" ]; then
+                                # power source has changed --> assigned profile
+                                _pp_next="$(assigned_profile)"
+                            else
+                                # power source has not changed --> keep profile
+                                # note: ignores meaningless power_supply events triggered by unplugging USB-C (disk) devices
+                                _pp_next=$_pp_last
+                            fi
+                            ;;
+
+                        2) # smart switching
+                            if [ "$_syspwr" = "$PS_UNKNOWN" ]; then
+                                # power source unknown --> default profile
+                                _pp_next="$(assigned_profile)"
+                            elif [ "$_syspwr" != "$_ps_last" ]; then
+                                # power source has changed
+                                case "$_syspwr" in
+                                    "$PS_AC")
+                                        if [ "$_pp_last" = "$(assigned_profile "$PS_BAT")" ]; then
+                                            # last profile matches the battery default --> assigned AC profile
+                                            _pp_next="$(assigned_profile "$PS_AC")"
+                                        else
+                                            # last profile does not match the battery default --> keep profile
+                                            _pp_next="$_pp_last"
+                                        fi
+                                        ;;
+
+                                    "$PS_BAT")
+                                        if [ "$_pp_last" = "$(assigned_profile "$PS_AC")" ]; then
+                                            # last profile matches the AC default --> assigned battery profile
+                                            _pp_next="$(assigned_profile "$PS_BAT")"
+                                        else
+                                            # last profile does not match the AC default --> keep profile
+                                            _pp_next="$_pp_last"
+                                        fi
+                                        ;;
+                                esac
+                            else
+                                # power source has not changed --> keep profile
+                                # note: ignores meaningless power_supply events triggered by unplugging USB-C (disk) devices
+                                _pp_next=$_pp_last
+                            fi
+                            ;;
+
+                    esac # $TLP_AUTO_SWITCH
+                fi # not manual mode
                 ;;
 
             bat)
-                _pp_next="$PP_BAL"
-                set_manual_mode "$PP_BAL"
+                _pp_next="$(assigned_profile "$PS_BAT")"
+                set_manual_mode "$_pp_next"
                 ;;
 
             ac)
-                _pp_next="$PP_PRF"
-                set_manual_mode "$PP_PRF"
+                _pp_next="$(assigned_profile "$PS_AC")"
+                set_manual_mode "$_pp_next"
                 ;;
 
             power-saver)
@@ -1288,41 +1353,29 @@ get_next_power_profile () {
             *)
                 # all other tlp commands and *tlp-usb-udev disk* that do not touch the power profile
                 neutral=1
-                if wordinlist "$_manual_mode" "$PP_VALID"; then
-                    # use manual mode
-                    _pp_next=$_manual_mode
+                if man_pp="$(get_manual_mode)"; then
+                    # manual profile
+                    _pp_next="$man_pp"
                 else
                     # use previous profile
-                    # note: this can even be $PS_UNKNOWN if 'tlp init start' has not yet been run,
-                    # i.e. no last_pwr exists
+                    # note: this can even be $PP_NONE if 'tlp init start' has not yet been run, i.e. no last_pwr exists
                     _pp_next=$_pp_last
                 fi
                 ;;
 
         esac # $tlp_cmd
+    fi # non-persistent profile
 
-        if [ "$neutral" != "1" ] && [ "$_pp_next" -eq "$PS_UNKNOWN" ]; then
-            # non-neutral command and profile still undefined -> use configured default mode
-            case $(toupper "$TLP_DEFAULT_MODE") in
-                AC|PRF)  _pp_next=$PP_PRF ;;
-                BAT|BAL) _pp_next=$PP_BAL ;;
-                SAV)     _pp_next=$PP_SAV ;;
-
-                *) # unconfigured or invalid default mode -> check machine type
-                    if is_laptop; then
-                        _pp_next=$PP_BAL # laptop: assume battery
-                    else
-                        _pp_next=$PP_PRF # desktop/other: assume AC
-                    fi
-                    ;;
-            esac
-        fi # unknown power source
-    fi # non-persistent mode
+    if [ "$neutral" != "1" ] && [ "$_pp_next" = "$PP_NONE" ]; then
+        # catch all: non-neutral command and profile still undefined
+        # -> try assigned profile as last resort
+        _pp_next="$(assigned_profile)"
+    fi # still undefined
 
     if [ "$_pp_next" != "$_pp_last" ]; then
-        echo_debug "ps" "get_next_power_profile($tlp_cmd).change: sw=$TLP_AUTO_SWITCH; def=$_default_mode; man=$_manual_mode; pers=$_persist_mode; ps_last=$_ps_last; pp_last=$_pp_last; pp_next=$_pp_next"
+        echo_debug "ps" "get_next_power_profile($tlp_cmd).change: autosw=$TLP_AUTO_SWITCH; def=$def_pp; man=$man_pp; pers=$pers; ps_last=$_ps_last; pp_last=$_pp_last; pp_next=$_pp_next"
     else
-        echo_debug "ps" "get_next_power_profile($tlp_cmd).keep: sw=$TLP_AUTO_SWITCH; def=$_default_mode; man=$_manual_mode; pers=$_persist_mode; ps_last=$_ps_last; pp_last=$_pp_last; pp_next=$_pp_next"
+        echo_debug "ps" "get_next_power_profile($tlp_cmd).keep: autosw=$TLP_AUTO_SWITCH; def=$def_pp; man=$man_pp; pers=$pers; ps_last=$_ps_last; pp_last=$_pp_last; pp_next=$_pp_next"
     fi
 
     return "$_pp_next"
@@ -1380,9 +1433,9 @@ echo_started_profile () { # announce power profile and auto/manual mode after st
 
     printf "TLP started using profile %s" "$(pp2strx "$1")"
 
-    if [ "$_manual_mode" != "$MPM_OFF" ]; then
+    if get_manual_mode > /dev/null; then
         printf " (manual).\n"
-    elif [ "$_default_mode" = "$1" ]; then
+    elif [ "$_pp_def_mem" = "$1" ]; then
         printf " (default).\n"
     elif [ "$2" = "start" ]; then
         printf " (auto).\n"

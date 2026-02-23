@@ -94,6 +94,14 @@
 
 #TLP_AUTO_SWITCH=2
 
+# TLP profiles to use when automatic switching is enabled
+# (TLP_AUTO_SWITCH=1 or 2):
+#   PRF=performance, BAL=balanced, SAV=power-saver.
+# Default: PRF (AC power), BAL (battery power)
+
+#TLP_PROFILE_AC=BAL
+#TLP_PROFILE_BAT=SAV
+
 # TLP profile to use when automatic switching is disabled
 # (TLP_AUTO_SWITCH=0), profile is locked (TLP_PERSISTENT_DEFAULT=1)
 # or no power supply is detected:
