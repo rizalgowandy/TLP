@@ -22,9 +22,6 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
 
 # --- Constants
-readonly TLP="tlp"
-readonly SUDO="sudo"
-
 readonly CPUD="/sys/devices/system/cpu"
 readonly CPU0="${CPUD}/cpu0"
 readonly INTELPSD="/sys/devices/system/cpu/intel_pstate"

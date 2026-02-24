@@ -43,6 +43,7 @@ check_radio () {
     local rf_cmd="$1"
     local errcnt=0
     local rf_save rf_seq
+    local sdo
 
     printf_msg "check_radio (%s) {{{\n" "$rf_cmd"
 
@@ -69,11 +70,11 @@ check_radio () {
         if [ -n "$rf_seq" ]; then
             printf_msg " initial: %s\n" "$rf_save"
 
-            for SUDO in '     ' 'sudo '; do
+            for sdo in "     " "$SUDO "; do
                 for next_state in $rf_seq; do
                     # shellcheck disable=SC2086
-                    $SUDO $rf_cmd "$next_state" 1> /dev/null
-                    printf_msg " %s%s %-3s -> " "$SUDO" "$rf_cmd" "$next_state"
+                    $sdo $rf_cmd "$next_state" 1> /dev/null
+                    printf_msg " %s%s %-3s -> " "$sdo" "$rf_cmd" "$next_state"
                     new_state="$(read_rf_state "$rf_cmd")"
 
                     if [ "$new_state" = "$next_state" ]; then

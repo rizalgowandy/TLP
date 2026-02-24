@@ -12,11 +12,8 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
 
 # --- Constants
-readonly TLP="tlp"
-readonly SUDO="sudo"
 readonly UDEVADM="udevadm"
 
-readonly MANUALMODE='/run/tlp/manual_mode'
 readonly TEMPCONF='/etc/tlp.d/99-unit-test.conf'
 
 # --- Tests
@@ -558,9 +555,6 @@ check_ps_udev_no_switch () {
     local errcnt=0
 
     printf_msg "check_ps_udev_no_switch {{{\n"
-
-    # reset profile
-    ${SUDO} ${TLP} start -- TLP_AUTO_SWITCH=2 TLP_DEFAULT_MODE="" TLP_PERSISTENT_DEFAULT=0 > /dev/null
 
     # save initial profile
     read_saved_profile; prof_save="$_prof"; ps="$_ps"

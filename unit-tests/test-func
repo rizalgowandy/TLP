@@ -9,6 +9,9 @@
 # ----------------------------------------------------------------------------
 # Constants
 
+readonly TLP="tlp"
+readonly SUDO="sudo"
+
 # ansi codes
 readonly ANSI_RED="\033[31m"
 readonly ANSI_GREEN="\033[32m"
@@ -32,6 +35,7 @@ readonly MPM_OFF=255
 
 # statefile
 readonly LASTPWR='/run/tlp/last_pwr'
+readonly MANUALMODE='/run/tlp/manual_mode'
 
 # workaround: mitigate void threshold writes
 export VWRITE_SLEEP=2
@@ -208,14 +212,20 @@ glob_compare_sysf () {
 }
 
 read_saved_profile () {
-    # read saved profile and power source
+    # read initial saved profile and power source
     # retval: $_prof, $_ps
-    read -r _prof _ps < "$LASTPWR" 2> /dev/null
-    if [ -z "$_prof" ]; then
-        printf_msg "*** Profile: missing or empty statefile.\n"
+
+    if [ ! -f  "$LASTPWR" ]; then
+        # last_pwr non-existent
+        ${SUDO} ${TLP} start > /dev/null 2>&1
     fi
-    if [ -z "$_ps" ]; then
-        printf_msg "*** Power source: missing or empty statefile.\n"
+
+    read -r _prof _ps < "$LASTPWR"
+    if   [ -z "$_prof" ] || [ "$_prof" = "$PP_NONE" ] \
+      || [ -z "$_ps" ] || [ "$_ps" = "$PS_UNKNOWN" ]; then
+        # last_pwr invalid
+        ${SUDO} ${TLP} start > /dev/null 2>&1
+        read -r _prof _ps < "$LASTPWR"
     fi
 }
 

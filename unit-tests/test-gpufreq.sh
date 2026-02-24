@@ -16,9 +16,6 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
 
 # --- Constants
-readonly TLP="tlp"
-readonly SUDO="sudo"
-
 readonly GPUGLOB='/sys/class/drm/card[0-9]'
 
 # --- Tests
