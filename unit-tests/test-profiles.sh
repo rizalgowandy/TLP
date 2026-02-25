@@ -177,15 +177,15 @@ check_default_mode () {
 
    # iterate supported profiles, return to initial profile
     case "$prof_save" in
-        "$PP_PRF") prof_seq="BAL SAV AC BAT PRF" ;;
-        "$PP_BAL") prof_seq="SAV AC BAT PRF BAL" ;;
-        "$PP_SAV") prof_seq="AC BAT PRF BAL SAV" ;;
+        "$PP_PRF") prof_seq="BAL SAV AC BAT none PRF" ;;
+        "$PP_BAL") prof_seq="SAV AC BAT PRF none BAL" ;;
+        "$PP_SAV") prof_seq="AC BAT PRF BAL none SAV" ;;
     esac
 
     printf_msg " initial: last_pwr/%s manual_mode/%s\n" "$prof_save $ps_save" "$mm_save"
 
     for prof in $prof_seq; do
-        printf_msg " TLP_AUTO_SWITCH=0 TLP_DEFAULT_MODE=%-4s" "${prof}:"
+        printf_msg " TLP_AUTO_SWITCH=0 TLP_DEFAULT_MODE=%-5s" "${prof}:"
 
         case "$prof" in
             PRF)
@@ -207,9 +207,21 @@ check_default_mode () {
             SAV)
                 prof_xpect="$PP_SAV $ps_save"
                 ;;
+
+            none)
+                if on_ac; then
+                    prof_xpect="$PP_PRF $ps_save"
+                else
+                    prof_xpect="$PP_BAL $ps_save"
+                fi
+                ;;
         esac
 
-        ${SUDO} ${TLP} start -- TLP_AUTO_SWITCH=0 TLP_DEFAULT_MODE="$prof" TLP_PERSISTENT_DEFAULT=0 > /dev/null 2>&1
+        if [ "$prof" = "none" ]; then
+            ${SUDO} ${TLP} start -- TLP_AUTO_SWITCH=0 TLP_DEFAULT_MODE= TLP_PERSISTENT_DEFAULT=0 > /dev/null 2>&1
+        else
+            ${SUDO} ${TLP} start -- TLP_AUTO_SWITCH=0 TLP_DEFAULT_MODE="$prof" TLP_PERSISTENT_DEFAULT=0 > /dev/null 2>&1
+        fi
 
         # expect changing profiles
         compare_sysf "$prof_xpect" "$LASTPWR"; rc=$?
@@ -262,15 +274,15 @@ check_persistent_mode () {
 
    # iterate supported profiles, return to initial profile
     case "$prof_save" in
-        "$PP_PRF") prof_seq="BAL SAV AC BAT PRF" ;;
-        "$PP_BAL") prof_seq="SAV AC BAT PRF BAL" ;;
-        "$PP_SAV") prof_seq="AC BAT PRF BAL SAV" ;;
+        "$PP_PRF") prof_seq="BAL SAV AC BAT none PRF" ;;
+        "$PP_BAL") prof_seq="SAV AC BAT PRF none BAL" ;;
+        "$PP_SAV") prof_seq="AC BAT PRF BAL none SAV" ;;
     esac
 
     printf_msg " initial: last_pwr/%s manual_mode/%s\n" "$prof_save $ps_save" "$mm_save"
 
     for prof in $prof_seq; do
-        printf_msg " TLP_PERSISTENT_DEFAULT=1 TLP_DEFAULT_MODE=%-4s" "${prof}:"
+        printf_msg " TLP_PERSISTENT_DEFAULT=1 TLP_DEFAULT_MODE=%-5s" "${prof}:"
 
         case "$prof" in
             PRF)
@@ -291,6 +303,14 @@ check_persistent_mode () {
 
             SAV)
                 prof_xpect="$PP_SAV $ps_save"
+                ;;
+
+            none)
+                if on_ac; then
+                    prof_xpect="$PP_PRF $ps_save"
+                else
+                    prof_xpect="$PP_BAL $ps_save"
+                fi
                 ;;
         esac
 
@@ -334,6 +354,7 @@ check_power_supply () {
 
     local ps ps_seq
     local prof_save prof_xpect
+    local def
     local ps_save
     local mm_save mm_xpect
     local rc=0
@@ -354,44 +375,51 @@ check_power_supply () {
 
     printf_msg " initial: last_pwr/%s manual_mode/%s\n" "$prof_save $ps_save" "$mm_save"
 
-    for ps in $ps_seq; do
-        printf_msg " X_SIMULATE_PS=%-3s TLP_DEFAULT_MODE=SAV:" "$ps"
+    for def in SAV none; do
+        for ps in $ps_seq; do
+            printf_msg " X_SIMULATE_PS=%-3s TLP_DEFAULT_MODE=%-5s:" "$ps" "$def"
 
-        case "$ps" in
-            "$PS_AC")
-                prof_xpect="$PP_PRF $ps"
-                ;;
+            case "$ps" in
+                "$PS_AC")
+                    prof_xpect="$PP_PRF $ps"
+                    ;;
 
-            "$PS_BAT")
-                prof_xpect="$PP_BAL $ps"
-                ;;
+                "$PS_BAT")
+                    prof_xpect="$PP_BAL $ps"
+                    ;;
 
-            "$PS_UNKNOWN")
-                prof_xpect="$PP_SAV $ps"
-                ;;
-        esac
+                "$PS_UNKNOWN")
+                    if [ "$def" = "none" ]; then
+                        prof_xpect="$PP_BAL $ps"
+                    else
+                        prof_xpect="$PP_SAV $ps"
+                    fi
+                    ;;
+            esac
 
-        ${SUDO} ${TLP} start -- TLP_AUTO_SWITCH=2 TLP_DEFAULT_MODE=SAV TLP_PERSISTENT_DEFAULT=0 \
-            X_SIMULATE_PS="$ps" > /dev/null 2>&1
+            ${SUDO} ${TLP} start -- TLP_AUTO_SWITCH=2 TLP_DEFAULT_MODE=$def TLP_PERSISTENT_DEFAULT=0 \
+                X_SIMULATE_PS="$ps" > /dev/null 2>&1
 
-        # expect changing profiles
-        compare_sysf "$prof_xpect" "$LASTPWR"; rc=$?
-        if [ "$rc" -eq 0 ]; then
-            printf_msg " last_pwr/%s=ok" "$prof_xpect $ps_save"
-        else
-            printf_msg " last_pwr/%s=err(%s)" "$prof_xpect $ps_save" "$rc"
-            errcnt=$((errcnt + 1))
-        fi
-        # do not expect manual mode
-        mm_xpect=""
-        compare_sysf "$mm_xpect" "$MANUALMODE"; rc=$?
-        if [ "$rc" -eq 0 ]; then
-            printf_msg " manual_mode/%s=ok" "$mm_xpect"
-        else
-            printf_msg " manual_mode/%s=err(%s)" "$mm_xpect" "$rc"
-            errcnt=$((errcnt + 1))
-        fi
-        printf_msg "\n"
+            # expect changing profiles
+            compare_sysf "$prof_xpect" "$LASTPWR"; rc=$?
+            if [ "$rc" -eq 0 ]; then
+                printf_msg " last_pwr/%s=ok" "$prof_xpect $ps_save"
+            else
+                printf_msg " last_pwr/%s=err(%s)" "$prof_xpect $ps_save" "$rc"
+                errcnt=$((errcnt + 1))
+            fi
+            # do not expect manual mode
+            mm_xpect=""
+            compare_sysf "$mm_xpect" "$MANUALMODE"; rc=$?
+            if [ "$rc" -eq 0 ]; then
+                printf_msg " manual_mode/%s=ok" "$mm_xpect"
+            else
+                printf_msg " manual_mode/%s=err(%s)" "$mm_xpect" "$rc"
+                errcnt=$((errcnt + 1))
+            fi
+            printf_msg "\n"
+
+        done # ps
 
     done # prof
 
