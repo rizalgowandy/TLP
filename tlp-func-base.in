@@ -1174,7 +1174,7 @@ assigned_profile () { # print profile code assigned to the given or current powe
             ap="$(id2pp "$TLP_PROFILE_AC")"
             if [ "$ap" = "$PP_NONE" ]; then
                 # messed config --> substitute default or performance profile
-                ap="$(id2pp "${TLP_DEFAULT_MODE:-PRF}")"
+                ap="$(id2pp "${TLP_PROFILE_DEFAULT:-PRF}")"
             fi
             ;;
 
@@ -1182,24 +1182,24 @@ assigned_profile () { # print profile code assigned to the given or current powe
             ap="$(id2pp "$TLP_PROFILE_BAT")"
             if [ "$ap" = "$PP_NONE" ]; then
                 # messed config --> substitute default or balanced profile
-                ap="$(id2pp "${TLP_DEFAULT_MODE:-BAL}")"
+                ap="$(id2pp "${TLP_PROFILE_DEFAULT:-BAL}")"
             fi
             ;;
 
         *) # unknown power source --> substitute default profile
-            ap="$(id2pp "$TLP_DEFAULT_MODE")"
+            ap="$(id2pp "$TLP_PROFILE_DEFAULT")"
             if [ "$ap" = "$PP_NONE" ]; then
                 # no default profile --> check machine type
                 if is_laptop; then
                     # laptop: use battery profile
                     ap="$(id2pp "$TLP_PROFILE_BAT")"
                     # messed config --> substitute balanced profile
-                    ap="${ap:-$PP_BAL}"
+                    [ "$ap" = "$PP_NONE" ] && ap="$PP_BAL"
                 else
                     # desktop/other: use AC profile
                     ap="$(id2pp "$TLP_PROFILE_AC")"
                     # messed config --> substitute performance profile
-                    ap="${ap:-$PP_PRF}"
+                    [ "$ap" = "$PP_NONE" ] && ap="$PP_PRF"
                 fi
             else
                 _pp_def_mem="$ap"
@@ -1208,7 +1208,7 @@ assigned_profile () { # print profile code assigned to the given or current powe
     esac
 
     printf "%s" "$ap"
-    echo_debug "ps" "assigned_profile($1): ps=$ps; ap=$ap"
+    echo_debug "ps" "assigned_profile($1): ps=$ps; def=$_pp_def_mem; ap=$ap"
     return "$ap"
 }
 
@@ -1221,11 +1221,10 @@ get_next_power_profile () {
     # retval: $_pp_next, $_pp_last, $_pp_def_mem: PP_PRF=0/PP_BAL=1/PP_SAV=2
     # rc: same as $_pp_next
     # like get_sys_power_supply(), plus:
-    #### TODO: update
-    # - maps unknown power source to TLP_DEFAULT_MODE
-    # - returns manual or persistent mode if applicable and not 'tlp start'
-    # - if TLP_DEFAULT_MODE is unconfigured and power source is unknown,
+    # - maps unknown power source to TLP_PROFILE_DEFAULT
+    # - if TLP_PROFILE_DEFAULT is unconfigured and power source is unknown,
     #   returns PP_BAL for laptop / PP_PRF for desktop/other
+    # - considers manual mode if not 'tlp start'
 
     # determine current power supply
     get_sys_power_supply "$tlp_cmd"
@@ -1235,7 +1234,7 @@ get_next_power_profile () {
     local tlp_cmd="$1"
     local neutral=0
     # shellcheck disable=SC2155
-    local def_pp="$(id2pp "$TLP_DEFAULT_MODE")"
+    local def_pp="$(id2pp "$TLP_PROFILE_DEFAULT")"
     local man_pp=""
     local pers=0
     _pp_next="$PP_NONE"

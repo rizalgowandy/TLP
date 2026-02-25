@@ -83,7 +83,7 @@
 
 # Control automatic switching of the TLP profile when connecting or removing
 # the charger, when booting the system or when executing 'tlp start':
-#   0=disabled - never switch, use TLP_DEFAULT_MODE if configured
+#   0=disabled - never switch, use TLP_PROFILE_DEFAULT if configured
 #   1=auto  - always switch, select performance on AC and
 #             balanced on battery power.
 #   2=smart - do not switch if the following profiles were active previously:
@@ -110,11 +110,11 @@
 # PRF and BAL, respectively.
 # Default: <none>
 
-#TLP_DEFAULT_MODE=BAL
+#TLP_PROFILE_DEFAULT=BAL
 
 # Lock TLP profile:
 #   0=profile depends on automatic switching,
-#   1=profile is locked to TLP_DEFAULT_MODE (TLP_AUTO_SWITCH is ignored).
+#   1=profile is locked to TLP_PROFILE_DEFAULT (TLP_AUTO_SWITCH is ignored).
 # Default: 0
 
 #TLP_PERSISTENT_DEFAULT=0
