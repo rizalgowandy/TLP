@@ -103,21 +103,13 @@
 #TLP_PROFILE_BAT=SAV
 
 # TLP profile to use when automatic switching is disabled
-# (TLP_AUTO_SWITCH=0), profile is locked (TLP_PERSISTENT_DEFAULT=1)
-# or no power supply is detected:
+# (TLP_AUTO_SWITCH=0) or no power supply is detected:
 #   PRF=performance, BAL=balanced, SAV=power-saver.
 # Note: legacy values AC and BAT continue to work. They are mapped to
 # PRF and BAL, respectively.
 # Default: <none>
 
 #TLP_PROFILE_DEFAULT=BAL
-
-# Lock TLP profile:
-#   0=profile depends on automatic switching,
-#   1=profile is locked to TLP_PROFILE_DEFAULT (TLP_AUTO_SWITCH is ignored).
-# Default: 0
-
-#TLP_PERSISTENT_DEFAULT=0
 
 # Power supply classes to ignore when determining TLP profile:
 #  AC, USB, BAT.
