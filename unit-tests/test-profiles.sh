@@ -5,7 +5,7 @@
 #
 # Tested parameters:
 # - TLP_AUTO_SWITCH
-# - TLP_DEFAULT_MODE
+# - TLP_PROFILE_DEFAULT
 # - TLP_PERSISTENT_DEFAULT
 #
 # Copyright (c) 2026 Thomas Koch <linrunner at gmx.net> and others.
@@ -126,7 +126,7 @@ check_profile_select () {
 
         esac
 
-        ${SUDO} ${TLP} "$prof" -- TLP_AUTO_SWITCH=2 TLP_DEFAULT_MODE="" > /dev/null 2>&1
+        ${SUDO} ${TLP} "$prof" -- TLP_AUTO_SWITCH=2 TLP_PROFILE_DEFAULT="" > /dev/null 2>&1
 
         # check expect results
         compare_sysf "$prof_xpect" "$LASTPWR"; rc=$?
@@ -185,7 +185,7 @@ check_default_mode () {
     printf_msg " initial: last_pwr/%s manual_mode/%s\n" "$prof_save $ps_save" "$mm_save"
 
     for prof in $prof_seq; do
-        printf_msg " TLP_AUTO_SWITCH=0 TLP_DEFAULT_MODE=%-5s" "${prof}:"
+        printf_msg " TLP_AUTO_SWITCH=0 TLP_PROFILE_DEFAULT=%-5s" "${prof}:"
 
         case "$prof" in
             PRF)
@@ -218,9 +218,9 @@ check_default_mode () {
         esac
 
         if [ "$prof" = "none" ]; then
-            ${SUDO} ${TLP} start -- TLP_AUTO_SWITCH=0 TLP_DEFAULT_MODE= TLP_PERSISTENT_DEFAULT=0 > /dev/null 2>&1
+            ${SUDO} ${TLP} start -- TLP_AUTO_SWITCH=0 TLP_PROFILE_DEFAULT="" TLP_PERSISTENT_DEFAULT=0 > /dev/null 2>&1
         else
-            ${SUDO} ${TLP} start -- TLP_AUTO_SWITCH=0 TLP_DEFAULT_MODE="$prof" TLP_PERSISTENT_DEFAULT=0 > /dev/null 2>&1
+            ${SUDO} ${TLP} start -- TLP_AUTO_SWITCH=0 TLP_PROFILE_DEFAULT="$prof" TLP_PERSISTENT_DEFAULT=0 > /dev/null 2>&1
         fi
 
         # expect changing profiles
@@ -282,7 +282,7 @@ check_persistent_mode () {
     printf_msg " initial: last_pwr/%s manual_mode/%s\n" "$prof_save $ps_save" "$mm_save"
 
     for prof in $prof_seq; do
-        printf_msg " TLP_PERSISTENT_DEFAULT=1 TLP_DEFAULT_MODE=%-5s" "${prof}:"
+        printf_msg " TLP_PERSISTENT_DEFAULT=1 TLP_PROFILE_DEFAULT=%-5s" "${prof}:"
 
         case "$prof" in
             PRF)
@@ -314,7 +314,7 @@ check_persistent_mode () {
                 ;;
         esac
 
-        ${SUDO} ${TLP} auto -- TLP_PERSISTENT_DEFAULT=1 TLP_DEFAULT_MODE="$prof" > /dev/null 2>&1
+        ${SUDO} ${TLP} auto -- TLP_PERSISTENT_DEFAULT=1 TLP_PROFILE_DEFAULT="$prof" > /dev/null 2>&1
 
         # expect changing profiles
         compare_sysf "$prof_xpect" "$LASTPWR"; rc=$?
@@ -377,7 +377,7 @@ check_power_supply () {
 
     for def in SAV none; do
         for ps in $ps_seq; do
-            printf_msg " X_SIMULATE_PS=%-3s TLP_DEFAULT_MODE=%-5s:" "$ps" "$def"
+            printf_msg " X_SIMULATE_PS=%-3s TLP_PROFILE_DEFAULT=%-5s:" "$ps" "$def"
 
             case "$ps" in
                 "$PS_AC")
@@ -397,7 +397,7 @@ check_power_supply () {
                     ;;
             esac
 
-            ${SUDO} ${TLP} start -- TLP_AUTO_SWITCH=2 TLP_DEFAULT_MODE=$def TLP_PERSISTENT_DEFAULT=0 \
+            ${SUDO} ${TLP} start -- TLP_AUTO_SWITCH=2 TLP_PROFILE_DEFAULT=$def TLP_PERSISTENT_DEFAULT=0 \
                 X_SIMULATE_PS="$ps" > /dev/null 2>&1
 
             # expect changing profiles
@@ -455,7 +455,7 @@ check_auto_switch () {
         # iterate auto switch modes
 
         # reset profile
-        ${SUDO} ${TLP} start -- TLP_AUTO_SWITCH=2 TLP_DEFAULT_MODE="" TLP_PERSISTENT_DEFAULT=0 > /dev/null
+        ${SUDO} ${TLP} start -- TLP_AUTO_SWITCH=2 TLP_PROFILE_DEFAULT="" TLP_PERSISTENT_DEFAULT=0 > /dev/null
 
         # save current profile and power source
         read_saved_profile; prof_save="$_prof"
@@ -466,7 +466,7 @@ check_auto_switch () {
                 for ps_now in 0 1; do
                     for mode in auto resume; do
                         printf_msg "  %-6s X_SIMULATE_PS=%s:" "$mode" "$ps_now"
-                        ${SUDO} ${TLP} "$mode" -- TLP_AUTO_SWITCH="$as" TLP_DEFAULT_MODE="" TLP_PERSISTENT_DEFAULT=0 \
+                        ${SUDO} ${TLP} "$mode" -- TLP_AUTO_SWITCH="$as" TLP_PROFILE_DEFAULT="" TLP_PERSISTENT_DEFAULT=0 \
                             X_SIMULATE_PS="$ps_now" > /dev/null 2>&1
                         # do not expect profile change
                         case "$as" in
