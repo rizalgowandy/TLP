@@ -38,6 +38,12 @@ please refer to: https://linrunner.de/tlp/developers/packaging.html
     - Rewrite of tlp-pd to use only GLib and no longer python-dbus
     - Reversed the order of TLP's profiles in the desktop UI to match
       power-profiles-daemon's order
+    - TLP_PROFILE_AC/BAT: customize automatic TLP profiles for AC and battery.
+      For example, they can be changed to balanced on AC power and power-saver
+      on battery power.
+    - TLP_DEFAULT_MODE: renamed to TLP_PROFILE_DEFAULT
+    - TLP_PERSISTENT_DEFAULT: *DEPRECATED* instead use TLP_AUTO_SWITCH=0
+      together with TLP_PROFILE_DEFAULT to lock TLP to a fixed profile
     Processor:
     - tlp-stat -p: section "+++ Platform profile" renamed to '+++ Platform"
 
