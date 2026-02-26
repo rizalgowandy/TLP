@@ -433,7 +433,6 @@ check_power_supply () {
     return $errcnt
 }
 
-
 check_auto_switch () {
     # test TLP_AUTO_SWITCH=0/1/2
     # global param: $_testcnt, $_failcnt
@@ -453,9 +452,6 @@ check_auto_switch () {
 
     for as in 0 1 2; do
         # iterate auto switch modes
-
-        # reset profile
-        ${SUDO} ${TLP} start -- TLP_AUTO_SWITCH=2 TLP_PROFILE_DEFAULT="" TLP_PERSISTENT_DEFAULT=0 > /dev/null
 
         # save current profile and power source
         read_saved_profile; prof_save="$_prof"
