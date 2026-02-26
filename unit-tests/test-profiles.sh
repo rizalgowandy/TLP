@@ -282,7 +282,7 @@ check_persistent_mode () {
     printf_msg " initial: last_pwr/%s manual_mode/%s\n" "$prof_save $ps_save" "$mm_save"
 
     for prof in $prof_seq; do
-        printf_msg " TLP_PERSISTENT_DEFAULT=1 TLP_PROFILE_DEFAULT=%-5s" "${prof}:"
+        printf_msg " TLP_AUTO_SWITCH=2 TLP_PERSISTENT_DEFAULT=1 TLP_PROFILE_DEFAULT=%-5s" "${prof}:"
 
         case "$prof" in
             PRF)
@@ -314,7 +314,7 @@ check_persistent_mode () {
                 ;;
         esac
 
-        ${SUDO} ${TLP} auto -- TLP_PERSISTENT_DEFAULT=1 TLP_PROFILE_DEFAULT="$prof" > /dev/null 2>&1
+        ${SUDO} ${TLP} auto -- TLP_AUTO_SWITCH=2 TLP_PERSISTENT_DEFAULT=1 TLP_PROFILE_DEFAULT="$prof" > /dev/null 2>&1
 
         # expect changing profiles
         compare_sysf "$prof_xpect" "$LASTPWR"; rc=$?
