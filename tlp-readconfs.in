@@ -167,19 +167,18 @@ sub parse_configfile {
         # strip newline
         chomp $line;
         $ln += 1;
-        # strip comments: everything after '#' but not when '#' is quoted, i.e. followed by a closing quote ('"')
-        # note: opening quote is handled by the regex below
-        $line =~ s/#(?=[^"]*$).*$//;
+        # strip #-comments outside of quoted value
+        $line =~ s/(?:"[^"]*")(*SKIP)(*FAIL)|#.*$//;
         # strip trailing spaces
         $line =~ s/\s+$//;
-        # select lines with format 'PARAMETER=value' or 'PARAMETER="value"'
-        if ( $line =~ /^(?<name>[A-Z_]+[0-9]*)(?<op>(=|\+=))(?:(?<val_bare>[][0-9a-zA-Z _.:-]*)|"(?<val_dquoted>[][0-9a-zA-Z _.:-]*)")\s*$/ ) {
+        # select lines with format PARAMETER=value or PARAMETER="value"
+        if ( $line =~ /^(?<name>[A-Z_]+[0-9]*)(?<op>=|\+=)"?(?<value>[][0-9a-zA-Z _.:-]*)"?\s*$/ ) {
             my $name = $+{name};
             if ( $do_ren ) {
                 # rename PARAMETER
                 $name =~ s/$renrex/$rename{$1}/;
             }
-            my $value = $+{val_dquoted} // $+{val_bare};
+            my $value = $+{value};
             my $append = $+{op} eq "+=";
             store_name_value_source ($name, $value, $append, $source . " L" . sprintf ("%04d", $ln), $is_def );
         }
