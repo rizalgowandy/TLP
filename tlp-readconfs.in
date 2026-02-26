@@ -23,7 +23,8 @@ use warnings;
 use File::Basename;
 use Getopt::Long;
 
-# --- Constants
+# --- Definitions
+# Path substitutions
 use constant CONF_USR => '@TLP_CONFUSR@';
 use constant CONF_DIR => '@TLP_CONFDIR@';
 use constant CONF_DEF => '@TLP_CONFDEF@';
@@ -33,6 +34,9 @@ use constant CONF_DPR => '@TLP_CONFDPR@';
 # Exit codes
 use constant EXIT_TLPCONF => 5;
 use constant EXIT_DEFCONF => 6;
+
+# Defaults spared by TLP_DISABLE_DEFAULTS=1
+use constant ESSENTIAL_DEFAULTS => qr/TLP_ENABLE|TLP_WARN_LEVEL|TLP_PROFILE_AC|TLP_PROFILE_BAT/;
 
 # --- Global vars
 my @config_val = ();      # 2-dim array: parameter name, value, source, default-value
@@ -205,7 +209,7 @@ sub write_runconf {
         # skip default entries
         next if ( $skip_defaults # if TLP_DISABLE_DEFAULTS=1
             and $source =~ /^$defsrc/ # skip default-only or default-identical
-            and not ( $name =~ /TLP_ENABLE|TLP_WARN_LEVEL/ ) # do not skip essential
+            and not ( $name =~ ESSENTIAL_DEFAULTS ) # do not skip essentials
         );
 
         if ( $runconf eq *STDOUT ) {
