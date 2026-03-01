@@ -140,6 +140,7 @@ _testcnt=0
 _failcnt=0
 
 report_test "$_basename"
+printf_msg "+++ %s\n\n" "$_basename"
 
 [ "$do_wifi" = "1" ] && check_radio wifi
 [ "$do_bluetooth" = "1" ] && check_radio bluetooth

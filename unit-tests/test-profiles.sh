@@ -685,6 +685,7 @@ _testcnt=0
 _failcnt=0
 
 report_test "$_basename"
+printf_msg "+++ %s\n\n" "$_basename"
 
 # --- TEST
 [ "$do_profile" = "1" ] && check_profile_select

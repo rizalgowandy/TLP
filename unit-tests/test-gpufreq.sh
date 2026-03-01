@@ -456,6 +456,7 @@ _testcnt=0
 _failcnt=0
 
 report_test "$_basename"
+printf_msg "+++ %s\n\n" "$_basename"
 
 # save initial profile
 read_saved_profile
@@ -477,7 +478,7 @@ for _gpu_base in $GPUGLOB; do
     _gpu_driver="$(readlink "${_gpu_base}/device/driver")"
     _gpu_driver="${_gpu_driver##*/}"
 
-    printf_msg "+++ gpu: %s --- driver: %s\n\n" "$_gpu_base" "$_gpu_driver"
+    printf_msg "gpu: %s, driver: %s\n\n" "$_gpu_base" "$_gpu_driver"
 
     # checks
     case "$_gpu_driver" in

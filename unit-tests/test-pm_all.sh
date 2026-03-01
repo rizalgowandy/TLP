@@ -12,6 +12,7 @@ start_report
 
 "$spath/test-profiles.sh"
 "$spath/test-cpufreq.sh"
+"$spath/test-disabled-defaults.sh"
 "$spath/test-gpufreq.sh"
 "$spath/test-rf-switch.sh"
 "$spath/test-service-warnings.sh"

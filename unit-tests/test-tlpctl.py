@@ -6,6 +6,7 @@
 # - tlpctl list
 # - tlpctl loglevel
 
+import os
 import re
 import time
 from typing import List
@@ -253,6 +254,7 @@ def test_loglevel(report: TestReport):
 # --- Run tests
 if __name__ == "__main__":
     report = TestReport()
+    print(f"+++ {os.path.basename(__file__)}\n")
 
     test_set_direct(report)
     test_set(report)
