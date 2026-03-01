@@ -455,7 +455,7 @@ check_cpu_epp () {
                         if [ "$rc" -eq 0 ]; then
                             printf_msg " %s=ok" "$pol"
                         else
-                            printf_msg " %s=err(%s(" "$pol" "$rc"
+                            printf_msg " %s=err(%s)" "$pol" "$rc"
                             errcnt=$((errcnt + 1))
                         fi
 
@@ -900,6 +900,31 @@ spath="${0%/*}"
     exit 70
 }
 
+# read args
+if [ $# -eq 0 ]; then
+    do_opmode="1"
+    do_governor="1"
+    do_freq="1"
+    do_epp="1"
+    do_perf="1"
+    do_boost="1"
+    do_profile="1"
+else
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            opmode)   do_opmode="1" ;;
+            governor) do_governor="1" ;;
+            freq)     do_freq="1" ;;
+            epp)      do_epp="1" ;;
+            perf_pct) do_perf="1" ;;
+            boost)    do_boost="1" ;;
+            profile)  do_profile="1" ;;
+        esac
+
+        shift # next argument
+    done # while arguments
+fi
+
 # check prerequisites and initialize
 check_tlp
 _cpu_driver=$(read_sysf "${CPU0}/cpufreq/scaling_driver") || {
@@ -918,8 +943,7 @@ _testcnt=0
 _failcnt=0
 
 report_test "$_basename"
-
-printf_msg "+++ %s --- cpu_driver: %s\n\n" "${0##*/}" "$_cpu_driver"
+printf_msg "+++ %s --- cpu_driver: %s\n\n" "$_basename" "$_cpu_driver"
 
 # save initial profile
 read_saved_profile
@@ -934,13 +958,13 @@ case "$prof_save" in
 esac
 
 # --- TEST
-check_cpu_driver_opmode
-check_cpu_scaling_governor
-check_cpu_scaling_freq
-check_cpu_epp
-check_cpu_perf_pct
-check_cpu_boost
-check_platform_profile
+[ "$do_opmode" = "1" ] && check_cpu_driver_opmode
+[ "$do_governor" = "1" ] && check_cpu_scaling_governor
+[ "$do_freq" = "1" ] && check_cpu_scaling_freq
+[ "$do_epp" = "1" ] && check_cpu_epp
+[ "$do_perf" = "1" ] && check_cpu_perf_pct
+[ "$do_boost" = "1" ] && check_cpu_boost
+[ "$do_profile" = "1" ] && check_platform_profile
 
 report_result "$_testcnt" "$_failcnt"
 
