@@ -6,6 +6,17 @@ please refer to: https://linrunner.de/tlp/developers/packaging.html
   * Development version
 
   * Features
+    Battery Care:
+    - tlp-stat -b: label calculated mW(h) ratings as approximations
+    File System:
+    - DISK_IDLE_SECS_ON_AC/BAT ignored with kernels >= 7.0, where
+      laptop_mode has been deprecated
+    Graphics:
+    - RADEON_DPM_STATE_ON_AC/BAT/SAV removed (deprecated since 1.10)
+    Radio Devices:
+    - RDW: warning if configured, but NetworkManager-dispatcher.service
+      is not enabled
+    - RESTORE_DEVICE_STATE_ON_STARTUP removed (deprecated since 1.10)
 
   * Bugfixes
 
