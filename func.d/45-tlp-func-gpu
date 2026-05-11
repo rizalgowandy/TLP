@@ -117,7 +117,7 @@ set_intel_gpu_power_profile () {
     done # card
 
     if [ $gdone -eq 0 ]; then
-        echo_debug "pm" "set_intel_gpu_power_profile($1).no_gpu"
+        echo_debug "pm" "set_intel_gpu_power_profile($1).no_xe_gpu"
     fi
 
     return 0
