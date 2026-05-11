@@ -440,12 +440,7 @@ check_services_activation_status () {
         fi
         for su in $RFKILL_SERVICES; do
             if ! check_service_state "$su" masked 2> /dev/null; then
-                if [ "$RESTORE_DEVICE_STATE_ON_STARTUP" = "1" ]; then
-                    echo_message "Warning: TLP's radio device switching on boot may not work as expected because "`
-                                `"RESTORE_DEVICE_STATE_ON_STARTUP=1 is configured and $su is not masked "`
-                                `"--> Run 'systemctl mask $su' to ensure the full functionality of TLP." "err"
-                    echo_message ""
-                elif [ -n "$DEVICES_TO_DISABLE_ON_STARTUP" ] || [ -n "$DEVICES_TO_ENABLE_ON_STARTUP" ]; then
+                if [ -n "$DEVICES_TO_DISABLE_ON_STARTUP" ] || [ -n "$DEVICES_TO_ENABLE_ON_STARTUP" ]; then
                     echo_message "Warning: TLP's radio device switching on boot may not work as expected because "`
                                 `"DEVICES_TO_DISABLE_ON_STARTUP or DEVICES_TO_ENABLE_ON_STARTUP "`
                                 `"is configured and $su is not masked "`
