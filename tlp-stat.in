@@ -341,7 +341,7 @@ if [ "$show_system" = "1" ] || [ "$show_all" = "1" ] ; then
     fi
 
     # --- RDW status
-    if check_rdw_installed; then
+    if check_tlp_rdw_installed; then
         if ! check_tlp_enabled; then
             printf "tlp-rdw        = disabled (TLP disabled)\n"
         elif check_run_flag "$RDW_KILL"; then

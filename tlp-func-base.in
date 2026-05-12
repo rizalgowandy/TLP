@@ -62,6 +62,7 @@ readonly DEBUG_TAGS_ALL="arg bat cfg disk lock nm path pm ps rf run sysfs udev u
 
 readonly TLP_SERVICE="tlp.service"
 readonly TLPPD_SERVICE="tlp-pd.service"
+readonly NM_RDW_SERVICE="NetworkManager-dispatcher.service"
 readonly PPD_SERVICE="power-profiles-daemon.service"
 readonly RFKILL_SERVICES="systemd-rfkill.service systemd-rfkill.socket"
 
@@ -393,6 +394,11 @@ check_tlp_pd_installed () {
     cmd_exists "$TLPPD"
 }
 
+check_tlp_rdw_installed () {
+    # check if tlp-rdw is installed
+    cmd_exists "$TLPRDW"
+}
+
 check_systemd () {
     # check if systemd is the active init system (PID 1) and systemctl is installed
     # rc: 0=yes, 1=no
@@ -437,6 +443,20 @@ check_services_activation_status () {
             fi
             echo_message ""
             rc=1
+        fi
+        if check_tlp_rdw_installed && ! check_service_state "$NM_RDW_SERVICE" enabled > /dev/null 2>&1; then
+            if [ -n "$DEVICES_TO_DISABLE_ON_LAN_CONNECT" ] \
+                ||[ -n "$DEVICES_TO_DISABLE_ON_WIFI_CONNECT" ] \
+                ||[ -n "$DEVICES_TO_DISABLE_ON_WWAN_CONNECT" ] \
+                ||[ -n "$DEVICES_TO_ENABLE_ON_LAN_DISCONNECT" ] \
+                ||[ -n "$DEVICES_TO_ENABLE_ON_WIFI_DISCONNECT" ] \
+                ||[ -n "$DEVICES_TO_ENABLE_ON_WWAN_DISCONNECT" ]; then
+                echo_message "Warning: TLP's radio device switching for DEVICES_TO_ENABLE/DISABLE... will not work "`
+                            `"because $NM_RDW_SERVICE is not enabled "`
+                            `"--> Run 'systemctl enable $NM_RDW_SERVICE' to ensure the full functionality of TLP." "err"
+                echo_message ""
+                rc=1
+            fi
         fi
         for su in $RFKILL_SERVICES; do
             if ! check_service_state "$su" masked 2> /dev/null; then

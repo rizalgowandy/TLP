@@ -32,11 +32,6 @@ check_openrc () {
     [ -e /run/openrc/softlevel ]
 }
 
-check_rdw_installed () {
-    # check if tlp-rdw is installed
-    cmd_exists "$TLPRDW"
-}
-
 check_tlp_pd_running () {
     # check if power-profiles-daemon is running
     # rc: 0=yes, 1=no
