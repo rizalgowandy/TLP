@@ -1051,6 +1051,15 @@ id2pp () { # convert power profile id to code
     esac
 }
 
+pp2sfx () { # convert power profile code to config suffix
+    # $1: profile: PP_PRF=0/PP_BAL=1/PP_SAV=2
+    case "$1" in
+        "$PP_PRF")  printf "AC" ;;
+        "$PP_BAL")  printf "BAT" ;;
+        "$PP_SAV")  printf "SAV" ;;
+    esac
+}
+
 set_manual_mode () { # set manual profile
     # $1: profile code: PP_PRF=0/PP_BAL=1/PP_SAV=2
     # rc: 0=ok/1=error
@@ -1120,11 +1129,8 @@ pp2strx () { # convert profile code to string plus config suffix
     # $1: profile: PP_PRF=0/PP_BAL=1/PP_SAV=2
 
     pp2str "$1"
-    case "$1" in
-        "$PP_PRF")  printf "/AC" ;;
-        "$PP_BAL")  printf "/BAT" ;;
-        "$PP_SAV")  printf "/SAV" ;;
-    esac
+    printf "/"
+    pp2sfx "$1"
 }
 
 read_saved_power_profile () {
