@@ -242,17 +242,23 @@
 
 #NMI_WATCHDOG=0
 
-# Select platform profile:
+# Select ACPI platform profile:
 #   performance, balanced, low-power.
 # Controls system operating characteristics around power/performance levels,
-# thermal and fan speed. Values are given in order of increasing power saving.
-# Note: check the output of tlp-stat -p to determine availability on your
-# hardware and additional profiles such as: balanced-performance, quiet, cool.
-# Default: performance (AC), balanced (BAT), low-power (SAV)
+# thermal and fan speed. The feature is implemented in the vendor firmware.
+# Values are given in order of increasing power saving.
+# Multiple values separated with spaces are tried sequentially until success.
+# Note: some vendors offer different or extra profiles, not just the standard
+# ones listed above. Check the output of tlp-stat -p to see what's available.
+# The defaults already cover common profiles.
+# Default:
+#   "balanced-performance performance" (AC),
+#   "balanced" (BAT),
+#   "low-power cool quiet" (SAV)
 
-#PLATFORM_PROFILE_ON_AC=performance
-#PLATFORM_PROFILE_ON_BAT=balanced
-#PLATFORM_PROFILE_ON_SAV=low-power
+#PLATFORM_PROFILE_ON_AC="performance"
+#PLATFORM_PROFILE_ON_BAT="balanced"
+#PLATFORM_PROFILE_ON_SAV="low-power"
 
 # System suspend mode:
 #   s2idle: Idle standby - a pure software, light-weight, system sleep state,

@@ -500,15 +500,15 @@ set_nmi_watchdog () { # enable/disable nmi watchdog
 set_platform_profile () { # set platform profile
     # $1: PP_PRF, PP_BAL, PP_SAV
 
-    local pwr
+    local pwr_list pwr_choices pwr match
 
     case "$1" in
-        "$PP_PRF") pwr="${PLATFORM_PROFILE_ON_AC:-}" ;;
-        "$PP_BAL") pwr="${PLATFORM_PROFILE_ON_BAT:-}" ;;
-        "$PP_SAV") pwr="${PLATFORM_PROFILE_ON_SAV:-$PLATFORM_PROFILE_ON_BAT}" ;;
+        "$PP_PRF") pwr_list="${PLATFORM_PROFILE_ON_AC:-}" ;;
+        "$PP_BAL") pwr_list="${PLATFORM_PROFILE_ON_BAT:-}" ;;
+        "$PP_SAV") pwr_list="${PLATFORM_PROFILE_ON_SAV:-$PLATFORM_PROFILE_ON_BAT}" ;;
     esac
 
-    if [ -z "$pwr" ]; then
+    if [ -z "$pwr_list" ]; then
         # do nothing if unconfigured
         echo_debug "pm" "set_platform_profile($1).not_configured"
         return 0
@@ -517,15 +517,28 @@ set_platform_profile () { # set platform profile
     if [ -f $FWACPID/platform_profile ]; then
         if check_ppd_running; then
             # do not apply platform profile when power-profiles-daemon is running
-            echo_message "Warning: PLATFORM_PROFILE_ON_AC/BAT is not set because power-profiles-daemon is running."
+            echo_message "Warning: PLATFORM_PROFILE_ON_AC/BAT/SAV is not set because power-profiles-daemon is running."
             echo_debug "pm" "set_platform_profile($1).nop_ppd_active"
             return 0
         fi
 
-        if write_sysf "$pwr" $FWACPID/platform_profile; then
-            echo_debug "pm" "set_platform_profile($1): $pwr"
-        else
-            echo_debug "pm" "set_platform_profile($1).write_error"
+        pwr_choices="$(read_sysf "$FWACPID/platform_profile_choices")"
+        match=0
+
+        for pwr in $pwr_list; do
+            [ -n "$pwr" ] || continue
+            if wordinlist "$pwr" "$pwr_choices"; then
+                if write_sysf "$pwr" $FWACPID/platform_profile; then
+                    echo_debug "pm" "set_platform_profile($1): $pwr"
+                else
+                    echo_debug "pm" "set_platform_profile($1).write_error: $pwr"
+                fi
+                match=1
+            fi
+        done
+
+        if [ $match -eq 0 ]; then
+            echo_debug "pm" "set_platform_profile($1).no_match: config='$pwr_list'; choices='$pwr_choices'"
         fi
     else
         echo_debug "pm" "set_platform_profile($1).not_available"
