@@ -13,6 +13,16 @@ please refer to: https://linrunner.de/tlp/developers/packaging.html
       laptop_mode has been deprecated
     Graphics:
     - RADEON_DPM_STATE_ON_AC/BAT/SAV removed (deprecated since 1.10)
+    Processor:
+    - PLATFORM_PROFILE_ON_AC/BAT/SAV: some vendor firmwares offer different
+      or extra platform profiles, not just the standard ones.
+      To enable automatic adaptation, the parameters are transformed into
+      space-separated lists of options that are tried sequentially until
+      success. The defaults have been improved:
+      - If available, prefer 'balanced-performance' over 'performance'.
+        This will reduce fan speed on AC power for certain gaming laptops
+        (Issue #840).
+      - Add 'cool' and 'quiet' as alternatives to 'low-power'.
     Radio Devices:
     - RDW: warning if configured, but NetworkManager-dispatcher.service
       is not enabled
