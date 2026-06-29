@@ -1195,9 +1195,9 @@ if [ "$show_trace" = "1" ]; then
         # no journald data available --> retrieve trace output from logfile
         if [ -f $DEBUGLOG ]; then
             if [ "$show_trace_nm" = "1" ]; then
-                grep -E '(tlp|NetworkManager)\[' $DEBUGLOG
+                grep -E '(tlp\[|NetworkManager\[|tlp-pd' $DEBUGLOG
             else
-                grep -E 'tlp\[' $DEBUGLOG
+                grep -E '(tlp\[|tlp-pd)' $DEBUGLOG
             fi
         else
             cecho "Error: $DEBUGLOG does not exist." 1>&2
