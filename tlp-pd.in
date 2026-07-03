@@ -8,7 +8,10 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
 
 import argparse  # noqa: I001
-from gi.repository import Gio, GLib
+
+### import gi
+### gi.require_version("GLibUnix", "2.0")
+from gi.repository import Gio, GLib  ### , GLibUnix
 import inspect
 import logging
 import logging.handlers
@@ -152,10 +155,9 @@ class ProfilesDaemon:
         # Connect to system bus and register objects
         self._connection = Gio.bus_get_sync(Gio.BusType.SYSTEM, None)
 
-        ### FIXME: Ignore premature deprecation warnings for Gio.DBusConnection.register_object()
+        ### Suppress deprecation warnings for Gio.DBusConnection.register_object()
         ### FIXME: Replace with register_object_with-closure2() once GLib 2.84 is generally available
         warnings.filterwarnings("ignore", category=DeprecationWarning)
-
         # Register main interface
         self._registration_ids.append(
             self._connection.register_object(
@@ -166,7 +168,6 @@ class ProfilesDaemon:
                 self._set_property,
             )
         )
-
         # Register legacy interface
         self._registration_ids.append(
             #
@@ -178,7 +179,6 @@ class ProfilesDaemon:
                 self._set_property,
             )
         )
-
         warnings.filterwarnings("default", category=DeprecationWarning)
 
         # Own bus names
@@ -203,6 +203,25 @@ class ProfilesDaemon:
                 None,
             )
         )
+
+    def reload(self) -> None:
+        self._active_profile = self._get_tlp_profile()
+        self._drop_all_holds()
+
+        self._logger.info(f"{DAEMON_NAME} reloaded.")
+
+    def stop(self) -> None:
+        self._drop_all_holds()
+
+        for reg_id in self._registration_ids:
+            self._connection.unregister_object(reg_id)
+        self._registration_ids.clear()
+
+        for owner_id in self._owner_ids:
+            Gio.bus_unown_name(owner_id)
+        self._owner_ids.clear()
+
+        self._logger.info(f"{DAEMON_NAME} stopped.")
 
     def _handle_method_call(
         self,
@@ -730,7 +749,19 @@ def _sanitize_uint32(input: str) -> int:
 
 
 def main() -> None:
-    # Parse arguments
+
+    # --- Unix signal handlers
+    def handle_stop(sig_name: str):
+        logger.info(f"{DAEMON_NAME} received {sig_name}, shutting down...")
+        daemon.stop()
+        mainloop.quit()
+        return GLib.SOURCE_REMOVE
+
+    def handle_reload(sig_name: str):
+        logger.info(f"{DAEMON_NAME} received {sig_name}, reloading...")
+        daemon.reload()
+
+    # --- Parse arguments
     parser = argparse.ArgumentParser(description=f"{DAEMON_NAME}")
     _ = parser.add_argument(
         "--debug", "-D", action="store_true", help="log debugging messages"
@@ -779,9 +810,23 @@ def main() -> None:
     # --- Run main loop
     try:
         mainloop = GLib.MainLoop()
+
+        ### Suppress deprecation warnings for GLib.unix_signal_add()
+        ### FIXME: Replace with GLibUnix.signal_add() once PyGObject 3.55.3 is generally available
+        warnings.filterwarnings("ignore", category=DeprecationWarning)
+        GLib.unix_signal_add(
+            GLib.PRIORITY_DEFAULT, signal.SIGTERM, handle_stop, "SIGTERM"
+        )
+        GLib.unix_signal_add(
+            GLib.PRIORITY_DEFAULT, signal.SIGHUP, handle_reload, "SIGHUP"
+        )
+        warnings.filterwarnings("default", category=DeprecationWarning)
+
         mainloop.run()
     except KeyboardInterrupt:
-        logger.info(f"{DAEMON_NAME} shutting down ...")
+        logger.info(f"{DAEMON_NAME} received keyboard interrupt, shutting down...")
+    finally:
+        remove_pidfile()
 
 
 if __name__ == "__main__":
