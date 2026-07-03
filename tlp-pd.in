@@ -805,10 +805,77 @@ def main() -> None:
         logger.info(f"{DAEMON_NAME} received {sig_name}, reloading...")
         daemon.reload()
 
+    # --- Helpers
+    def create_pidfile() -> None:
+        try:
+            with open(PID_FILE, "w") as f:
+                f.write(f"{os.getpid()}\n")
+        except OSError:
+            print(
+                f"Warning: failed to create {PID_FILE}.",
+                file=sys.stderr,
+            )
+
+    def remove_pidfile() -> None:
+        try:
+            os.unlink(PID_FILE)
+        except FileNotFoundError:
+            pass
+
+    def is_systemd() -> bool:
+        # Check if daemon is run by systemd
+        return "INVOCATION_ID" in os.environ
+
+    def daemonize() -> None:
+        # SysV only: background process with UNIX double fork mechanism (reference: man 7 daemon)
+        # Do first fork: detach from the terminal
+        try:
+            if os.fork() > 0:
+                # Exit first parent
+                sys.exit(0)
+        except OSError as err:
+            print(
+                f"Error: fork #1 of {DAEMON_NAME} failed: {err}.",
+                file=sys.stderr,
+            )
+            sys.exit(1)
+
+        # Create new session and make the process the session leader
+        os.setsid()
+
+        # Do second fork: prevent re-acquiring a terminal
+        try:
+            if os.fork() > 0:
+                # Exit first child
+                sys.exit(0)
+        except OSError as err:
+            print(
+                f"Error: fork #2 of {DAEMON_NAME} failed: {err}.",
+                file=sys.stderr,
+            )
+            sys.exit(1)
+
+        # Redirect standard file descriptors to /dev/null
+        devnull = os.open(os.devnull, os.O_RDWR)
+        for fd in (sys.stdin.fileno(), sys.stdout.fileno(), sys.stderr.fileno()):
+            os.dup2(devnull, fd)
+        os.close(devnull)
+
+        # Avoid blocking mount points
+        os.chdir("/")
+        # Avoid creating group or world writable files
+        os.umask(0o022)
+
     # --- Parse arguments
     parser = argparse.ArgumentParser(description=f"{DAEMON_NAME}")
     _ = parser.add_argument(
         "--debug", "-D", action="store_true", help="log debugging messages"
+    )
+    _ = parser.add_argument(
+        "--foreground",
+        "-F",
+        action="store_true",
+        help="do not detach and become a daemon",
     )
     args = parser.parse_args()
 
@@ -823,7 +890,16 @@ def main() -> None:
     # Automatically reap tlp zombie subprocesses
     signal.signal(signal.SIGCHLD, signal.SIG_IGN)
 
+    # --- Go to background if not run by systemd and foreground is not forced
+    # Note: must happen before logging or anything GLib-related is initialized
+    if not is_systemd() and not args.foreground:
+        daemonize()
+        runs_in_background = True
+    else:
+        runs_in_background = False
+
     # --- Set up logging
+    # Note: must happen after daemonize() so the socket is opened in the child
     logger = logging.getLogger(__name__)
     handler = logging.handlers.SysLogHandler(address="/dev/log", facility=LOG_DAEMON)
     logger.addHandler(handler)
@@ -831,6 +907,12 @@ def main() -> None:
     # Set syslog identifier "tlp-pd"
     formatter = logging.Formatter(f"{os.path.basename(__file__)}: %(message)s")
     handler.setFormatter(formatter)
+
+    # When run in the foreground and not by systemd --> dup the log output to stderr
+    if not runs_in_background and not is_systemd():
+        handler2 = logging.StreamHandler(stream=sys.stderr)
+        logger.addHandler(handler2)
+        handler2.setFormatter(formatter)
 
     # Set syslog level
     if args.debug:
@@ -851,7 +933,15 @@ def main() -> None:
         )
         sys.exit(2)
 
-    logger.info(f"{DAEMON_NAME} started.")
+    if runs_in_background:
+        # Note: pidfile may only be written after it has been confirmed
+        # that there is no other instance running
+        create_pidfile()
+        logger.info(f"{DAEMON_NAME} started (background).")
+    elif is_systemd():
+        logger.info(f"{DAEMON_NAME} started (systemd).")
+    else:
+        logger.info(f"{DAEMON_NAME} started (foreground).")
     logger.info(f"Interfaces: {BUS_NAME}, {BUS_NAME_LEGACY}")
     logger.info(f"Object path: {OBJECT_PATH}")
     logger.info(f"Arguments: {vars(args)}")
@@ -877,7 +967,8 @@ def main() -> None:
     except KeyboardInterrupt:
         logger.info(f"{DAEMON_NAME} received keyboard interrupt, shutting down...")
     finally:
-        remove_pidfile()
+        if runs_in_background:
+            remove_pidfile()
 
 
 if __name__ == "__main__":
