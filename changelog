@@ -32,7 +32,9 @@ please refer to: https://linrunner.de/tlp/developers/packaging.html
 
   * Bugfixes
     Battery Care:
-    - ASUS laptops: fix charge threshold for kernel 7.1 (Issue #890)
+    - ASUS laptops:
+      - Fix charge threshold for kernel 7.1 (Issue #890)
+      - tlp-stat -b: display "no data" until a threshold has been set
     Profiles:
     - Restrict USB charger detection to PD/PPS
 
