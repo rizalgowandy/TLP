@@ -1,28 +1,33 @@
 ## How to submit a bug report
 
 ### Before you report a bug
+
 Make sure you have:
 
-* Followed the appropiate [Installation instructions](https://linrunner.de/tlp/installation)
-* Read the [Settings guide](https://linrunner.de/tlp/settings)
-* Carefully checked the [FAQ](https://linrunner.de/tlp/faq)
-* Checked [existing bug reports](https://github.com/linrunner/TLP/issues)
-* Tried to isolate the cause as described in [Troubleshooting](https://linrunner.de/tlp/support/troubleshooting.html)
+- Followed the appropiate [Installation instructions](https://linrunner.de/tlp/installation)
+- Read the [Settings guide](https://linrunner.de/tlp/settings)
+- Carefully checked the [FAQ](https://linrunner.de/tlp/faq)
+- Checked [existing bug reports](https://github.com/linrunner/TLP/issues)
+- Tried to isolate the cause as described in [Troubleshooting](https://linrunner.de/tlp/support/troubleshooting.html)
 
 ### What not to report
-* **Outdated, missing or broken TLP packages. These are *not* provided by the project,
+
+- **Outdated, missing or broken TLP packages. These are _not_ provided by the project,
   but by the Linux distributions (exception: the Ubuntu PPA).**
-* Asking for help about installation, configuration and usage
-* Questions about your laptop's power consumption and how to optimize it
-* Deviations from powertop's recommendations
-* Hardware issues e.g. worn out or malfunctioning batteries
+- Asking for help about installation, configuration and usage
+- Questions about your laptop's power consumption and how to optimize it
+- Deviations from powertop's recommendations
+- Hardware issues e.g. worn out or malfunctioning batteries
 
 Please use adequate Linux forums for help and support questions.
 
 ### Reporting a bug
+
 This project uses [GitHub issues](https://github.com/linrunner/TLP/issues) for bug reports and feature requests.
 
 When opening an issue, provide **all the information requested by the
-[template](https://github.com/linrunner/TLP/blob/master/.github/ISSUE_TEMPLATE/bug_report.md)**.
-Bug reports not providing the necessary information get flagged *incomplete* and
-may be closed without further notice.
+[template](https://github.com/linrunner/TLP/blob/master/.github/ISSUE_TEMPLATE/bug_report.md)**:
+
+- Bug reports and feature request that do not use the template or provide the necessary information are flagged
+  as _incomplete_ and may be closed without further notice.
+- Bug reports and feature request **created with Copilot** are not welcome and may be closed without further notice.
