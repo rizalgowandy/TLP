@@ -25,13 +25,14 @@ from syslog import LOG_DAEMON
 from typing import Dict, List, Optional
 import warnings
 
-# --- Constants
+# --- Daemon constants
 DAEMON_NAME = "TLP Profiles Daemon"
 AVAILABLE_PROFILES = ["power-saver", "balanced", "performance"]
 PROFILE_MAXLEN = 12
 MAX_HOLDS = 16
 COOKIE_ATTEMPTS = 10
 MAX_UINT32 = 0xFFFFFFFF
+PID_FILE = "/run/tlp-pd.pid"
 
 # --- D-Bus constants
 BUS_NAME = "org.freedesktop.UPower.PowerProfiles"
@@ -151,7 +152,7 @@ class ProfilesDaemon:
         self._node_info = Gio.DBusNodeInfo.new_for_xml(INTROSPECTION_XML)
         self._node_info_legacy = Gio.DBusNodeInfo.new_for_xml(INTROSPECTION_XML_LEGACY)
 
-    def start(self) -> None:
+    def start(self) -> bool:
         # Connect to system bus and register objects
         self._connection = Gio.bus_get_sync(Gio.BusType.SYSTEM, None)
 
@@ -170,7 +171,6 @@ class ProfilesDaemon:
         )
         # Register legacy interface
         self._registration_ids.append(
-            #
             self._connection.register_object(
                 OBJECT_PATH_LEGACY,
                 self._node_info_legacy.interfaces[0],
@@ -182,14 +182,17 @@ class ProfilesDaemon:
         warnings.filterwarnings("default", category=DeprecationWarning)
 
         # Own bus names
+        self._name_acquired = False
+        self._name_lost = False
+
         self._owner_ids.append(
             Gio.bus_own_name(
                 Gio.BusType.SYSTEM,
                 BUS_NAME,
                 Gio.BusNameOwnerFlags.NONE,
                 None,
-                None,
-                None,
+                self._on_name_acquired,
+                self._on_name_lost,
             )
         )
 
@@ -199,10 +202,26 @@ class ProfilesDaemon:
                 BUS_NAME_LEGACY,
                 Gio.BusNameOwnerFlags.NONE,
                 None,
-                None,
-                None,
+                self._on_name_acquired,
+                self._on_name_lost,
             )
         )
+
+        # Wait for bus name acquisition result with timeout
+        context = GLib.MainContext.default()
+        deadline = GLib.get_monotonic_time() + int(2e6)  # 2 seconds
+
+        while not self._name_acquired and not self._name_lost:
+            context.iteration(True)  # block until at least one event arrives
+            if GLib.get_monotonic_time() > deadline:
+                self._logger.error("Timeout waiting for bus name acquisition")
+                return False
+
+        # Check aquisition success
+        if self._name_lost:
+            return False
+        else:
+            return True
 
     def reload(self) -> None:
         self._active_profile = self._get_tlp_profile()
@@ -222,6 +241,31 @@ class ProfilesDaemon:
         self._owner_ids.clear()
 
         self._logger.info(f"{DAEMON_NAME} stopped.")
+
+    def _on_name_acquired(self, connection, bus_name):
+        self._name_acquired = True
+
+    def _on_name_lost(self, connection, bus_name):
+        # Bus name aquisition failed
+        self._name_lost = True
+
+        # Get PID of the owning process
+        try:
+            result = self._connection.call_sync(
+                "org.freedesktop.DBus",
+                "/org/freedesktop/DBus",
+                "org.freedesktop.DBus",
+                "GetConnectionUnixProcessID",
+                GLib.Variant("(s)", (bus_name,)),
+                GLib.VariantType("(u)"),
+                Gio.DBusCallFlags.NONE,
+                -1,
+                None,
+            )
+            pid = result.unpack()[0]
+            self._logger.error(f"Bus name {bus_name} is owned by PID {pid}.")
+        except GLib.Error:
+            self._logger.error(f"Bus name {bus_name} is owned by another process.")
 
     def _handle_method_call(
         self,
@@ -798,7 +842,14 @@ def main() -> None:
 
     # --- Create daemon instance
     daemon = ProfilesDaemon(logger, loglevel)
-    daemon.start()
+    if not daemon.start():
+        msg = f"{DAEMON_NAME} (or another one) is already running, exiting."
+        logger.error(msg)
+        print(
+            f"Error: {msg}",
+            file=sys.stderr,
+        )
+        sys.exit(2)
 
     logger.info(f"{DAEMON_NAME} started.")
     logger.info(f"Interfaces: {BUS_NAME}, {BUS_NAME_LEGACY}")
