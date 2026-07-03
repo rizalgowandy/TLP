@@ -30,4 +30,5 @@ When opening an issue, provide **all the information requested by the
 
 - Bug reports and feature request that do not use the template or provide the necessary information are flagged
   as _incomplete_ and may be closed without further notice.
-- Bug reports and feature request **created with Copilot** are not welcome and may be closed without further notice.
+- The **use of Copilot** for creating issues is **strongly discouraged**, as this generally results in the template
+  requirements not being followed. These issues may be closed without further notice.
