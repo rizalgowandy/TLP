@@ -28,6 +28,7 @@ TLP_CONFDPR ?= /usr/share/tlp/deprecated.conf
 TLP_SYSD    ?= /usr/lib/systemd/system
 TLP_SDSL    ?= /usr/lib/systemd/system-sleep
 TLP_SYSV    ?= /etc/init.d
+TLP_SYSVD   ?= /etc/default
 TLP_ELOD    ?= /usr/lib/elogind/system-sleep
 TLP_POLKIT  ?= /usr/share/polkit-1/actions
 TLP_DBCONF  ?= /usr/share/dbus-1/system.d
@@ -56,6 +57,7 @@ _CONFDPR = $(DESTDIR)$(TLP_CONFDPR)
 _SYSD    = $(DESTDIR)$(TLP_SYSD)
 _SDSL    = $(DESTDIR)$(TLP_SDSL)
 _SYSV    = $(DESTDIR)$(TLP_SYSV)
+_SYSVD   = $(DESTDIR)$(TLP_SYSVD)
 _ELOD    = $(DESTDIR)$(TLP_ELOD)
 _POLKIT  = $(DESTDIR)$(TLP_POLKIT)
 _DBCONF  = $(DESTDIR)$(TLP_DBCONF)
@@ -254,7 +256,13 @@ install-pd: all
 	# Package tlp-pd
 	install -D -m 755 tlp-pd $(_SBIN)/tlp-pd
 	install -D -m 755 tlpctl $(_BIN)/tlpctl
+ifneq ($(TLP_WITH_SYSTEMD),0)
 	install -D -m 644 tlp-pd.service $(_SYSD)/tlp-pd.service
+endif
+ifneq ($(TLP_NO_INIT),1)
+	install -D -m 755 tlp-pd.init $(_SYSV)/tlp-pd
+	install -D -m 644 tlp-pd.default $(_SYSVD)/tlp-pd
+endif
 	install -D -m 644 tlp-pd.policy $(_POLKIT)/tlp-pd.policy
 	$(foreach BUS_NAME,org.freedesktop.UPower.PowerProfiles net.hadess.PowerProfiles, \
 		install -D -m 644 tlp-pd.dbus.conf $(_DBCONF)/$(BUS_NAME).conf; \

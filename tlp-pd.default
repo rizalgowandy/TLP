@@ -1,0 +1,4 @@
+# Defaults for tlp-pd
+
+# Enable debug logging
+#DAEMON_OPTS="--debug"
