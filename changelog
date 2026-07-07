@@ -19,6 +19,19 @@ please refer to: https://linrunner.de/tlp/developers/packaging.html
         (Issue #840).
       - Add 'cool' and 'quiet' as alternatives to 'low-power'.
     - tlp-stat -p: show platform_profile driver
+    Profiles:
+    - tlp-pd enhancements:
+      - Automatically backgrounds ("daemonizes") itself on startup
+      - -F/--foreground option forces it to stay in the foreground
+      - Refuses to start if another instance is already running
+        and claiming the D-Bus interface
+      - Handles SIGTERM for clean shutdown and SIGHUP for reload
+      SysVinit environments:
+      - Init script (/etc/init.d/tlp-pd) with config file
+        (/etc/default/tlp-pd) is provided
+      - tlp-stat -T: retrieves tlp-pd trace data from syslog (/var/log/debug)
+      systemd environments:
+      - 'systemctl reload tlp-pd' is now supported
     Radio Devices:
     - RDW: warning if configured, but NetworkManager-dispatcher.service
       is not enabled
