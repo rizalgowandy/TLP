@@ -285,7 +285,7 @@ case "$_cmd" in
                 echo "done."
 
                 # apply radio states
-                set_radio_device_states start
+                set_radio_device_states "$_pp_next" "startup"
                 ;;
 
             restart|force-reload)
@@ -318,9 +318,6 @@ case "$_cmd" in
                     poweroff_drivebay "$_pp_next" 0
                     echo "done."
                 fi
-
-                # apply radio states
-                set_radio_device_states stop
                 ;;
         esac
 
@@ -402,7 +399,8 @@ case "$_cmd" in
 
     suspend) # handle suspend/hibernate
         check_root
-        if [ "${X_TLP_SUSPEND_RFKILL_PERSIST:-1}" != "0" ]; then
+        # optional workaround for forgetful systems: backup bluetooth and wwan state
+        if [ "${X_TLP_SUSPEND_RFKILL_PERSIST:-0}" = "1" ]; then
             if [ -x "@TLP_SDSL@/system76-driver_bluetooth-suspend" ] \
                 && [ ! -x "@TLP_SDSL@/pop-default-settings_bluetooth-suspend" ] ; then
                 # system76's suspend/resume hack is active --> do not save bluetooth state
@@ -439,9 +437,12 @@ case "$_cmd" in
     resume) # handle resume
         check_root
         if lock_tlp; then
-            restore_device_states
+            # optional workaround for forgetful systems: restore bluetooth and wwan state
+            if [ "${X_TLP_SUSPEND_RFKILL_PERSIST:-0}" = "1" ]; then
+                restore_device_states
+            fi
 
-            has_power_profile_changed
+            has_power_profile_changed; pp_changed=$?
             apply_common_settings "$_pp_next"
             notify_profile_daemon "$(pp2str "$_pp_next")"
             resume_drivebay "$_pp_next"
@@ -460,6 +461,7 @@ case "$_cmd" in
                 # Note: no hardware capabable of force-discharge concerned so far
                 init_batteries_thresholds "asus huawei lg"
             fi
+            [ $pp_changed -eq 0 ] && set_radio_device_states "$_pp_next"
             save_runconf
             unlock_tlp
         fi
