@@ -381,9 +381,9 @@
 # Note: requires xe driver.
 # Default: base (AC), power_saving (BAT), power_saving (SAV)
 
-# INTEL_GPU_POWER_PROFILE_ON_AC=base
-# INTEL_GPU_POWER_PROFILE_ON_BAT=base
-# INTEL_GPU_POWER_PROFILE_ON_SAV=power_saving
+#INTEL_GPU_POWER_PROFILE_ON_AC=base
+#INTEL_GPU_POWER_PROFILE_ON_BAT=base
+#INTEL_GPU_POWER_PROFILE_ON_SAV=power_saving
 
 # Set the min/max/turbo frequency for the Intel GPU.
 # Parameters actually used depend on the driver:
