@@ -540,37 +540,45 @@
 
 #USB_ALLOWLIST="1111:2222 3333:4444"
 
-# Radio devices to disable on startup: bluetooth, nfc, wifi, wwan.
+# Note: the following three approaches to switching radio devices based
+# on specific events, that is
+# - on system startup,
+# - on TLP profile activation,
+# - on tlp-rdw events (see the last section),
+# may interfere with or cancel each other out.
+# Keep this in mind if you plan to use more than one.
+
+# Radio devices to enable or disable on system startup:
+#   bluetooth, nfc, wifi, wwan.
 # Separate multiple devices with spaces.
+# Note: if both are configured, the profile-based approach below takes
+# precedence over this one.
 # Default: <none>
 
+#DEVICES_TO_ENABLE_ON_STARTUP="bluetooth nfc wifi wwan"
 #DEVICES_TO_DISABLE_ON_STARTUP="bluetooth nfc wifi wwan"
 
-# Radio devices to enable on startup: bluetooth, nfc, wifi, wwan.
-# Separate multiple devices with spaces.
-# Default: <none>
-
-#DEVICES_TO_ENABLE_ON_STARTUP="wifi"
-
-# Radio devices to enable when switching to the performance profile:
+# Radio devices to enable or disable when a TLP profile is activated:
 #   bluetooth, nfc, wifi, wwan.
 # Default: <none>
 
+# - performance profile
 #DEVICES_TO_ENABLE_ON_AC="bluetooth nfc wifi wwan"
+#DEVICES_TO_DISABLE_ON_AC="bluetooth nfc wifi wwan"
+# When not in use (not connected) only
+#DEVICES_TO_DISABLE_ON_AC_NOT_IN_USE="bluetooth nfc wifi wwan"
 
-# Radio devices to disable when switching to the balanced or power-saver
-# profile:
-#   bluetooth, nfc, wifi, wwan.
-# Default: <none>
-
+# - balanced profile
+#DEVICES_TO_ENABLE_ON_BAT="bluetooth nfc wifi wwan"
 #DEVICES_TO_DISABLE_ON_BAT="bluetooth nfc wifi wwan"
-
-# Radio devices to disable when not in use (not connected) and switching
-# to the balanced or power-saver profile:
-#   bluetooth, nfc, wifi, wwan.
-# Default: <none>
-
+# When not in use (not connected) only
 #DEVICES_TO_DISABLE_ON_BAT_NOT_IN_USE="bluetooth nfc wifi wwan"
+
+# - power-saver profile
+#DEVICES_TO_ENABLE_ON_SAV="bluetooth nfc wifi wwan"
+#DEVICES_TO_DISABLE_ON_SAV="bluetooth nfc wifi wwan"
+# When not in use (not connected) only
+#DEVICES_TO_DISABLE_ON_SAV_NOT_IN_USE="bluetooth nfc wifi wwan"
 
 # Battery Care -- Charge thresholds
 # Charging will start once the charger is connected and the battery level
