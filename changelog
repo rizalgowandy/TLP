@@ -33,6 +33,21 @@ please refer to: https://linrunner.de/tlp/developers/packaging.html
       systemd environments:
       - 'systemctl reload tlp-pd' is now supported
     Radio Devices:
+    - Extend device switching to uniformly cover all profiles (Issue #891):
+      - performance
+        - DEVICES_TO_ENABLE_ON_AC
+        - DEVICES_TO_DISABLE_ON_AC (new)
+        - DEVICES_TO_DISABLE_ON_AC_NOT_IN_USE (new)
+      - balanced
+        - DEVICES_TO_ENABLE_ON_BAT (new)
+        - DEVICES_TO_DISABLE_ON_BAT
+        - DEVICES_TO_DISABLE_ON_BAT_NOT_IN_USE
+      - power-saver
+        - DEVICES_TO_ENABLE_ON_SAV (new)
+        - DEVICES_TO_DISABLE_ON_SAV (new)
+        - DEVICES_TO_DISABLE_ON_SAV_NOT_IN_USE (new)
+    - Remove the obsolete workaround for keeping bluetooth and wwan state
+      over a suspend/resume cycle
     - RDW: warning if configured, but NetworkManager-dispatcher.service
       is not enabled
     - RESTORE_DEVICE_STATE_ON_STARTUP removed (deprecated since 1.10)
